@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Bill</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta charset="UTF-8">
+    <style>
+        .invalid {
+            outline: 2px solid #e74c3c;
+        }
+    </style>
+</head>
+
+<header>
+    <h2>Welcome to SpringPharma</h2>
+    <a href="/logout">Logout</a>
+</header>
+
+<body>
+<main class="eightstyle">
+    <h2>Create Bill</h2>
+
+    <div th:if="${error}" style="color:red;" th:text="${error}"></div>
+
+    <form th:action="@{/billing/save}" method="post" style="margin-top:12px;">
+        <div>
+            <label>Customer Name (optional):</label>
+            <input type="text" name="customerName">
+        </div>
+
+        <h3 style="margin-top:12px;">Medicines</h3>
+        <table id="medicineTable" border="1" cellpadding="5">
+            <thead>
+            <tr>
+                <th>Medicine</th>
+                <th>Quantity</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- initial row -->
+            <tr>
+                <td>
+                    <input type="text" name="items[0].medicineName"
+                           class="medicineInput" required autocomplete="off" />
+                    <input type="hidden" name="items[0].medicineId" class="medicineId" />
+                    <datalist id="medicineList0"></datalist>
+                </td>
+                <td>
+                    <input type="number" name="items[0].quantity" min="1" value="1" required>
+                </td>
+                <td>
+                    <button type="button" class="removeRow">X</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <button type="button" id="addRow" style="margin-top:8px;">+ Add Medicine</button>
+
+        <div style="margin-top:12px;">
+            <button type="submit">Save Bill</button>
+            <a th:href="@{/billing}">Cancel</a>
+        </div>
+    </form>
+</main>
+
+<!-- medicines JSON -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    let medicines = /*[[${medicines}]]*/ [];
+    /*]]>*/
+</script>
+
+<!-- external script -->
+<script src="/js/billing-autocomplete.js"></script>
+
+</body>
+
+<footer>
+    <h3>All rights reserved @SpringPharm</h3>
+</footer>
+</html>

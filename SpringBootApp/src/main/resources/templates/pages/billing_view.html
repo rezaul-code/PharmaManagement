@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Invoice</title>
+ <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<header>
+	<h2>Welcome to SpringPharma</h2>
+	 <a href="/logout">Logout</a>
+
+</header>
+
+
+<body>
+
+<main class="tenthstyle">
+<h2>Invoice #<span th:text="${bill.id}"></span></h2>
+<p>Date: <span th:text="${#temporals.format(bill.billingDate, 'yyyy-MM-dd HH:mm')}"></span></p>
+<p>Customer: <span th:text="${bill.customerName}">-</span></p>
+
+<table border="1" style="margin-top:12px;">
+    <thead>
+    <tr><th>Medicine</th><th>Qty</th><th>Price</th><th>Line Total</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="it : ${bill.items}">
+        <td th:text="${it.medicine.name}"></td>
+        <td th:text="${it.quantity}"></td>
+        <td th:text="${it.pricePerUnit}"></td>
+        <td th:text="${it.lineTotal}"></td>
+    </tr>
+    </tbody>
+    <tfoot>
+    <tr>
+        <th colspan="3" style="text-align:right;">Grand Total</th>
+        <th th:text="${bill.totalAmount}"></th>
+    </tr>
+    </tfoot>
+</table>
+
+<div style="margin-top:12px;">
+    <a th:href="@{/billing}">Back to list</a>
+    <button onclick="window.print()">Print</button>
+</div>
+</main>
+</body>
+
+<footer>
+<h3>All rights reserved @SpringPharm</h3>
+
+</footer>
+</html>

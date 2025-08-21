@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Add Medicine</title>
+<link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<header>
+	<h2>Welcome to SpringPharma</h2>
+	 <a href="/logout">Logout</a>
+
+</header>
+
+<body>
+
+	<div class="fifthstyle">
+	<h2>Add New Medicine</h2>
+
+	<form th:action="@{/add_medicine}" th:object="${medicine}"
+		method="post">
+		<div>
+			<label for="name">Name:</label> <input type="text" id="name"
+				th:field="*{name}" required>
+		</div>
+		<div>
+			<label for="description">Description:</label> <input type="text"
+				id="description" th:field="*{description}" required>
+		</div>
+		<div>
+			<label for="medicineType">Medicine Type:</label> <select
+				id="medicineType" th:field="*{medicineType}" required>
+				<option value="" disabled selected>Select type</option>
+				<option
+					th:each="type : ${T(com.myspringboot.SpringBootApp.model.MedicineType).values()}"
+					th:value="${type}" th:text="${type}"></option>
+			</select>
+		</div>
+
+		<div>
+			<label for="manufacturer">Manufacturer:</label> <input type="text"
+				id="manufacturer" th:field="*{manufacturer}" required>
+		</div>
+		<div>
+			<label for="price">Price:</label> <input type="number" step="0.01"
+				id="price" th:field="*{price}" required>
+		</div>
+		<div>
+			<label for="quantity">Quantity:</label> <input type="number"
+				id="quantity" th:field="*{quantity}" required>
+		</div>
+		<div>
+			<label for="expiry_date">Expiry Date:</label> <input type="date"
+				id="expiry_date" th:field="*{expiry_date}" required>
+		</div>
+		<button type="submit">Save</button>
+	</form>
+
+	</div>
+
+</body>
+
+<footer>
+	<h3>All rights reserved @SpringPharm</h3>
+
+</footer>
+</html>

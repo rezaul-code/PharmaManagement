@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Login</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+
+<header>
+	<h2>SpringPharma Login</h2>
+</header>
+
+<body>
+
+	<div class="thirdstyle">
+	<h2>Log in</h2>
+
+	<form action="/login" method="post">
+		<input type="email" name="email" placeholder="Enter your Email"
+			required> <input type="password" name="password"
+			placeholder="Enter your Password" required>
+		<button type="submit">Login</button>
+		<p th:if="${error}" style="color: red;">[[${error}]]</p>
+		
+		<p>New user? Register here <a href="/signup">SignUp</a></p>
+	</form>
+
+
+	<p th:text="${error}" style="color: red;"></p>
+	</div>
+	
+</body>
+
+<footer>
+	<h3>All rights reserved @SpringPharm</h3>
+</footer>
+</html>

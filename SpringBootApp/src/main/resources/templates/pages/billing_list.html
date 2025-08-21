@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Bills</title></head>
+ <link rel="stylesheet" th:href="@{/css/style.css}">
+
+
+<header>
+	<h2>Welcome to SpringPharma</h2>
+	 <a href="/logout">Logout</a>
+
+</header>
+
+<body>
+<main class="ninethstyle">
+<div>
+    <h2>Bills</h2>
+    <a th:href="@{/billing/new}">+ New Bill</a>
+</div>
+
+<table border="1" style="margin-top:12px;">
+    <thead>
+    <tr><th>ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="b : ${bills}">
+        <td th:text="${b.id}"></td>
+        <td th:text="${#temporals.format(b.billingDate, 'yyyy-MM-dd HH:mm')}"></td>
+        <td th:text="${b.customerName}">-</td>
+        <td th:text="${b.totalAmount}"></td>
+        <td><a th:href="@{'/billing/' + ${b.id}}">View</a></td>
+    </tr>
+    </tbody>
+</table>
+</main>
+</body>
+
+<footer>
+<h3>All rights reserved @SpringPharm</h3>
+
+</footer>
+</html>

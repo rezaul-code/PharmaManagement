@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<header>
+    <h2>Welcome to SpringPharma</h2>
+</header>
+
+<body>
+
+	<div class="secondstyle">
+    <h2>Sign up here</h2>
+    
+    <form action="/signup" method="post" th:object="${user}">
+        <input type="text" name="username" placeholder="Enter Username" required>
+        <input type="email" name="email" placeholder="Enter your Email" required>
+        <input type="text" name="phone" placeholder="Enter your Phone Number" required>
+        <input type="password" name="password" placeholder="Set your Password" required>
+        <button type="submit">Submit</button>
+    </form>
+    <p>Already registered login here <a href="/login">login</a></p>
+    
+    </div>
+</body>
+
+<footer>
+    <h3>All rights reserved @SpringPharm</h3>
+</footer>
+</html>

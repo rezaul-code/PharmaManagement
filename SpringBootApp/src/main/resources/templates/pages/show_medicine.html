@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>SpringPharm</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+
+    <header>
+        <h2>Welcome to SpringPharma</h2>
+         <a href="/logout">Logout</a>
+    </header>
+
+<body>
+    
+    <main class="sixthstyle">
+       
+
+        <!-- Search Form -->
+        <form th:action="@{/show_medicine}" method="get" class="search-form">
+            <div>
+                
+                <input type="number" id="id" name="id" th:value="${searchId}" placeholder="id">
+            </div>
+
+            <div>
+               
+                <input type="text" id="name" name="name" th:value="${searchName}" placeholder="name">
+            </div>
+
+            <div>
+                <input type="text" id="description" name="description" th:value="${searchDescription}" placeholder="Description">
+            </div>
+
+            <div>
+                
+                <select id="type" name="type">
+                    <option value="">--Select--</option>
+                    <option th:each="t : ${types}"
+                            th:value="${t}"
+                            th:text="${t}"
+                            th:selected="${t} == ${searchType}">
+                    </option>
+                </select>
+            </div>
+
+            <div class="search-buttons">
+                <button type="submit">Search</button>
+                <a th:href="@{/show_medicine}" class="btn-reset">Reset</a>
+            </div>
+        </form>
+
+        <!-- Medicines Table -->
+        <table class="medicine-table">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Manufacturer</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Expiry Date</th>
+                    <th>Type</th>
+                    <th>Button</th>
+                    <th>Button</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="med : ${medicines}">
+                    <td th:text="${med.id}"></td>
+                    <td th:text="${med.name}"></td>
+                    <td th:text="${med.description}"></td>
+                    <td th:text="${med.manufacturer}"></td>
+                    <td th:text="${med.price}"></td>
+                    <td th:text="${med.quantity}"></td>
+                    <td th:text="${med.expiry_date}"></td>																																																																	
+                    <td th:text="${med.medicineType}"></td>
+                    <td><a th:href="@{/med_edit(id=${med.id})}"><i class="material-icons" style="font-size:18px;color:green">edit</i></a></td>
+                    <td> <a th:href="@{'/med_delete?id=' + ${med.id}}" onclick="return confirm('Are you sure?')"><i class="material-icons" style="font-size:18px;color:red">delete</i></a></td>
+                </tr>
+            </tbody>
+        </table>
+    </main>
+    
+</body>
+
+
+    <footer>
+        <h3>All rights reserved @SpringPharm</h3>
+    </footer>
+
+</html>

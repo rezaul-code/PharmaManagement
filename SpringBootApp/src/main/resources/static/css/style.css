@@ -1,0 +1,925 @@
+/* Header Footer Starts */
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Header */
+header {
+    background: linear-gradient(135deg, #3a6073);
+    color: white;
+    padding: 20px 0;
+    text-align: center;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+header h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Sticky Footer (no gap) */
+footer {
+    background: linear-gradient(135deg, #3a6073);
+    color: white;
+    padding: 15px 0;
+    text-align: center;
+    font-size: 0.9rem;
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+}
+body {
+    padding-bottom: 50px; /* Matches footer height */
+}
+
+
+/* Header Footer Ends */
+
+
+
+
+
+
+
+/* Index page start */
+
+/* Firststyle Container */
+.firststyle {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* Title */
+.firststyle h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    color: #2c3e50;
+}
+
+/* Table-like layout */
+.follow-table-index {
+    display: table;
+    width: 100%;
+}
+
+.follow-row-index {
+    display: table-row;
+}
+
+.follow-cell-index {
+    display: table-cell;
+    padding: 15px;
+}
+
+/* Link Buttons */
+.follow-cell-index a {
+    display: inline-block;
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover Effect */
+.follow-cell-index a:hover {
+    background: linear-gradient(135deg, #2980b9, #1f618d);
+    transform: translateY(-2px);
+}
+
+
+/* Index page ends */
+
+
+
+
+
+/* signup page start */
+
+
+/* Signup Card Section */
+.secondstyle {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* Heading */
+.secondstyle h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #3a6073;
+}
+
+/* Input Fields */
+.secondstyle input {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+
+.secondstyle input:focus {
+    border-color: #3a7bd5;
+    box-shadow: 0 0 8px rgba(58, 123, 213, 0.2);
+}
+
+/* Submit Button */
+.secondstyle button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #3a7bd5, #3a6073);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.secondstyle button:hover {
+    background: linear-gradient(135deg, #3a6073, #3a7bd5);
+    transform: translateY(-2px);
+}
+
+/* Signup page ends */
+
+
+
+
+/* log in started */
+
+/* Login Card Section */
+.thirdstyle {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* Heading */
+.thirdstyle h2 {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    color: #3a6073;
+}
+
+/* Input Fields */
+.thirdstyle input {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Prevents right overflow */
+}
+
+.thirdstyle input:focus {
+    border-color: #3a7bd5;
+    box-shadow: 0 0 8px rgba(58, 123, 213, 0.2);
+}
+
+/* Submit Button */
+.thirdstyle button {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #3a7bd5, #3a6073);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.thirdstyle button:hover {
+    background: linear-gradient(135deg, #3a6073, #3a7bd5);
+    transform: translateY(-2px);
+}
+
+/* Error Message */
+.thirdstyle p {
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+/* log in ends
+ */
+
+
+
+/*Dashboard started */
+
+/* Dashboard Container */
+.fourthstyle {
+    max-width: 700px;
+    margin: 50px auto;
+    padding: 40px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* Main Dashboard Heading */
+.fourthstyle h1 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    color: #3a6073;
+    font-weight: 700;
+}
+
+/* Subheading Links */
+.fourthstyle h3 {
+    margin: 20px 0;
+}
+
+/* Dashboard Links styled like buttons */
+.fourthstyle a {
+    display: inline-block;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    color: #fff;
+    background: linear-gradient(135deg, #4CAF50, #2e7d32);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover Effects */
+.fourthstyle a:hover {
+    background: linear-gradient(135deg, #45a049, #1b5e20);
+    transform: translateY(-3px);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .fourthstyle {
+        padding: 25px;
+    }
+    .fourthstyle a {
+        display: block;
+        margin: 10px auto;
+        width: 80%;
+    }
+}
+
+
+
+/*Dashboard ends */
+
+
+/*Add Medicine Started*/
+
+/* Fifthstyle Container */
+.fifthstyle {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Title */
+.fifthstyle h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 25px;
+}
+
+/* Form styling */
+.fifthstyle form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Labels */
+.fifthstyle label {
+    font-weight: bold;
+    margin-bottom: 6px;
+    display: inline-block;
+    color: #34495e;
+}
+
+/* Input & Select */
+.fifthstyle input,
+.fifthstyle select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    outline: none;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Input focus effect */
+.fifthstyle input:focus,
+.fifthstyle select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52,152,219,0.5);
+}
+
+/* Button styling */
+.fifthstyle button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover effect */
+.fifthstyle button:hover {
+    background: linear-gradient(135deg, #2980b9, #1f618d);
+    transform: translateY(-2px);
+}
+
+
+
+/*Add Medicine Ends*/
+
+
+
+
+/*Show Medicine started*/
+
+/* Fifthstyle Container */
+.fifthstyle {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Title */
+.fifthstyle h2 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin-bottom: 25px;
+}
+
+/* Form styling */
+.fifthstyle form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Labels */
+.fifthstyle label {
+    font-weight: bold;
+    margin-bottom: 6px;
+    display: inline-block;
+    color: #34495e;
+}
+
+/* Input & Select */
+.fifthstyle input,
+.fifthstyle select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    outline: none;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Input focus effect */
+.fifthstyle input:focus,
+.fifthstyle select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52,152,219,0.5);
+}
+
+/* Button styling */
+.fifthstyle button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+/* Hover effect */
+.fifthstyle button:hover {
+    background: linear-gradient(135deg, #2980b9, #1f618d);
+    transform: translateY(-2px);
+}
+
+
+
+/*Add Medicine Ends*/
+
+
+
+
+/*Show Medicine Started*/
+
+/* General Sixth Style Container */
+.sixthstyle {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    font-family: Arial, sans-serif;
+}
+
+/* Search Form Styling */
+.search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+    background: #f7f9fc;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.search-form input,
+.search-form select {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.search-form input:focus,
+.search-form select:focus {
+    border-color: #4cafef;
+    box-shadow: 0 0 5px rgba(76, 175, 239, 0.3);
+}
+
+/* Search Buttons */
+.search-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-buttons button {
+    padding: 8px 16px;
+    border: none;
+    background: #4cafef;
+    color: white;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+}
+
+.search-buttons button:hover {
+    background: #3b94d1;
+}
+
+.btn-reset {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #f44336;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s ease-in-out;
+}
+
+.btn-reset:hover {
+    background: #d63228;
+}
+
+/* Table Styling */
+.medicine-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    overflow-x: auto;
+}
+
+.medicine-table th,
+.medicine-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.medicine-table th {
+    background-color: #4cafef;
+    color: white;
+}
+
+.medicine-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.medicine-table tr:hover {
+    background-color: #f1f7ff;
+}
+
+
+
+/*Show Medicine Ends*/
+
+
+
+/* Edit Medicine Starts*/
+/* ====== Edit Medicine Page (seventhstyle) ====== */
+.seventhstyle {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    font-family: Arial, sans-serif;
+}
+
+.seventhstyle h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* Label styling */
+.seventhstyle label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+/* Input & Select fields */
+.seventhstyle input,
+.seventhstyle select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    box-sizing: border-box;
+    transition: border 0.2s ease-in-out;
+}
+
+.seventhstyle input:focus,
+.seventhstyle select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* Buttons */
+.seventhstyle button,
+.seventhstyle a {
+    display: inline-block;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 5px;
+}
+
+/* Update button */
+.seventhstyle button {
+    background-color: #3498db;
+    color: #fff;
+    transition: background 0.3s;
+}
+
+.seventhstyle button:hover {
+    background-color: #2980b9;
+}
+
+/* Cancel button */
+.seventhstyle a {
+    background-color: #e74c3c;
+    color: #fff;
+    margin-left: 8px;
+    transition: background 0.3s;
+}
+
+.seventhstyle a:hover {
+    background-color: #c0392b;
+}
+/* Edit Medicine Ends*/
+
+
+/* ====== Main container for Create Bill (eightstyle) ====== */
+main.eightstyle {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-family: Arial, sans-serif;
+    color: #2c3e50;
+}
+
+main.eightstyle h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #34495e;
+}
+
+
+
+
+/*  nine*/
+
+/* Labels */
+main.eightstyle label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+/* Input + Select */
+main.eightstyle input,
+main.eightstyle select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 15px;
+    box-sizing: border-box;
+    transition: border 0.2s ease-in-out;
+}
+
+main.eightstyle input:focus,
+main.eightstyle select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* Buttons */
+main.eightstyle button,
+main.eightstyle a {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+    margin-top: 8px;
+    transition: background 0.3s;
+}
+
+/* Save button */
+main.eightstyle button {
+    background-color: #27ae60;
+    color: #fff;
+    border: none;
+}
+
+main.eightstyle button:hover {
+    background-color: #1e8449;
+}
+
+/* Cancel button */
+main.eightstyle a {
+    background-color: #e74c3c;
+    color: #fff;
+    margin-left: 8px;
+}
+
+main.eightstyle a:hover {
+    background-color: #c0392b;
+}
+
+
+/*Eight Ends Here*/
+
+
+
+/*Nineth Style Start*/
+
+.ninethstyle {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Heading and top bar */
+.ninethstyle h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.ninethstyle a {
+    text-decoration: none;
+    color: #3498db;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.ninethstyle a:hover {
+    color: #1d6fa5;
+}
+
+/* Table styling */
+.ninethstyle table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 15px;
+}
+
+.ninethstyle th, 
+.ninethstyle td {
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.ninethstyle th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+}
+
+.ninethstyle tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.ninethstyle tr:hover {
+    background-color: #f1faff;
+}
+
+/* Action link inside table */
+.ninethstyle td a {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.ninethstyle td a:hover {
+    color: #1d8045;
+}
+
+
+
+
+
+/*Tenth Style Started*/
+
+.tenthstyle {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 25px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.12);
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #2c3e50;
+}
+
+/* Headings */
+.tenthstyle h2 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.tenthstyle p {
+    margin: 6px 0;
+    font-size: 15px;
+}
+
+/* Table styling */
+.tenthstyle table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 15px;
+}
+
+.tenthstyle th,
+.tenthstyle td {
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+.tenthstyle th {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+}
+
+.tenthstyle tfoot th {
+    background-color: #2c3e50;
+    color: #fff;
+    font-size: 16px;
+}
+
+/* Links & Buttons */
+.tenthstyle a {
+    display: inline-block;
+    margin-right: 10px;
+    padding: 8px 14px;
+    text-decoration: none;
+    background-color: #3498db;
+    color: #fff;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.tenthstyle a:hover {
+    background-color: #1d6fa5;
+}
+
+.tenthstyle button {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    background-color: #27ae60;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.tenthstyle button:hover {
+    background-color: #1e8449;
+}
+
+/* Print-friendly adjustments */
+@media print {
+    header, footer, .tenthstyle a, .tenthstyle button {
+        display: none;
+    }
+    .tenthstyle {
+        box-shadow: none;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+
+
+
+
+
+
+
