@@ -1,77 +1,107 @@
 package com.myspringboot.SpringBootApp.Service;
 
-import com.myspringboot.SpringBootApp.model.Billing;
-import com.myspringboot.SpringBootApp.model.BillingItem;
-import com.myspringboot.SpringBootApp.model.Medicine;
+import com.myspringboot.SpringBootApp.dto.BillingForm;
+import com.myspringboot.SpringBootApp.model.*;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BillingService {
 
-    private final BillingRepository billingRepository;
-    private final MedicineRepository medicineRepository;
+    @Autowired
+    private BillingRepository billingRepository;
 
-    public BillingService(BillingRepository billingRepository,
-                          MedicineRepository medicineRepository) {
-        this.billingRepository = billingRepository;
-        this.medicineRepository = medicineRepository;
-    }
+    @Autowired
+    private MedicineRepository medicineRepository;
 
-    // ✅ Old single medicine bill
-    public Billing createSimpleBill(Long medicineId, Integer quantity, String customerName) {
-        Billing bill = new Billing();
-        bill.setCustomerName(customerName);
+    // ─── Create Bill ─────────────────────────────────────────────────
 
-        Medicine medicine = medicineRepository.findById(medicineId)
-                .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + medicineId));
-
-        BillingItem item = new BillingItem();
-        item.setMedicine(medicine);
-        item.setQuantity(quantity);
-        item.setPricePerUnit(medicine.getPrice());
-        item.setLineTotal(medicine.getPrice() * quantity);
-        item.setBilling(bill);
-
-        bill.addItem(item);
-        bill.setTotalAmount(item.getLineTotal());
-
-        // update stock
-        medicine.setQuantity(medicine.getQuantity() - quantity);
-        medicineRepository.save(medicine);
-
-        return billingRepository.save(bill);
-    }
-
-    // ✅ New multiple medicine bill
     @Transactional
-    public Billing createBillWithItems(Billing bill) {
-        double total = 0.0;
+    public Billing createBill(BillingForm form, User createdBy) {
+        Billing billing = new Billing();
+        billing.setBillNumber(generateBillNumber());
+        billing.setPatientName(form.getPatientName());
+        billing.setPatientPhone(form.getPatientPhone());
+        billing.setCreatedAt(LocalDateTime.now());
+        billing.setCreatedBy(createdBy);
+        billing.setStatus(Billing.BillingStatus.PAID);
 
-        for (BillingItem item : bill.getItems()) {
-            Long medId = item.getMedicineId(); // ✅ comes from form field items[i].medicineId
-            if (medId == null) {
-                throw new IllegalArgumentException("Medicine ID missing in request");
-            }
+        for (BillingItemForm itemForm : form.getItems()) {
+            if (itemForm.getMedicineId() == null || itemForm.getQuantity() == null) continue;
 
-            Medicine medicine = medicineRepository.findById(medId)
-                    .orElseThrow(() -> new IllegalArgumentException("Medicine not found: " + medId));
+            BillingItem item = new BillingItem();
 
-            item.setMedicine(medicine);
-            item.setPricePerUnit(medicine.getPrice());
-            item.setLineTotal(medicine.getPrice() * item.getQuantity());
-            item.setBilling(bill);
+            // Fetch medicine
+            Optional<Medicine> medOpt = medicineRepository.findById(itemForm.getMedicineId());
+            medOpt.ifPresent(med -> {
+                item.setMedicine(med);
+                item.setMedicineName(med.getName());
+                item.setBatchNo(med.getBatchNo());
 
-            total += item.getLineTotal();
+                // Deduct stock
+                int newStock = med.getStockQuantity() - itemForm.getQuantity();
+                med.setStockQuantity(Math.max(newStock, 0));
+                medicineRepository.save(med);
+            });
 
-            // update stock
-            medicine.setQuantity(medicine.getQuantity() - item.getQuantity());
-            medicineRepository.save(medicine);
+            item.setQuantity(itemForm.getQuantity());
+            item.setUnitPrice(itemForm.getUnitPrice());
+            item.setGstPercentage(
+                itemForm.getGstPercentage() != null
+                    ? itemForm.getGstPercentage()
+                    : BigDecimal.ZERO
+            );
+
+            // Calculate line-item totals
+            item.calculateTotals();
+
+            billing.addItem(item);
         }
 
-        bill.setTotalAmount(total);
-        return billingRepository.save(bill);
+        // Recalculate bill-level totals from items (authoritative server-side calc)
+        billing.recalculateTotals();
+
+        return billingRepository.save(billing);
+    }
+
+    // ─── Read ────────────────────────────────────────────────────────
+
+    public List<Billing> getAllBills() {
+        return billingRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public Optional<Billing> getBillById(Long id) {
+        return billingRepository.findById(id);
+    }
+
+    // ─── Dashboard Stats ─────────────────────────────────────────────
+
+    public long getTotalBillCount() {
+        return billingRepository.count();
+    }
+
+    public BigDecimal getTodaySales() {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = startOfDay.plusDays(1);
+        BigDecimal total = billingRepository.sumGrandTotalBetween(startOfDay, endOfDay);
+        return total != null ? total : BigDecimal.ZERO;
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────
+
+    private String generateBillNumber() {
+        String date   = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        long   count  = billingRepository.count() + 1;
+        return String.format("BILL-%s-%04d", date, count);
     }
 }

@@ -1,32 +1,206 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Dashboard Page</title>
-     <link rel="stylesheet" th:href="@{/css/style.css}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
-
-<header>
-	<h2>Welcome to SpringPharma</h2>
-	 <a href="/logout">Logout</a>
-
-</header>
-
 <body>
 
-	<div class="fourthstyle">
-
-    <h1>Your Dashboard</h1>
-    <h3> <a href="add_medicine">Add Medicine</a></h3>
-    <h3><a href="show_medicine">Show Medicine</a></h3>
-    <h3> <a href="/billing/new">New Bill</a></h3>
-    <h3> <a href="/billing">Billing History</a></h3>
-    
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💊</div>
+    <div class="brand-text">
+      <span class="brand-name">PharmaManage</span>
+      <span class="brand-sub">v2.0 Pro</span>
     </div>
-    
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+
+    <a href="/dashboard" class="nav-item active">
+      <span class="nav-icon">🏠</span> Dashboard
+    </a>
+
+    <div class="nav-section-label">Medicine</div>
+    <a href="/medicine/show" class="nav-item">
+      <span class="nav-icon">💊</span> All Medicines
+    </a>
+    <a href="/medicine/add" class="nav-item">
+      <span class="nav-icon">➕</span> Add Medicine
+    </a>
+
+    <div class="nav-section-label">Billing</div>
+    <a href="/billing/new" class="nav-item">
+      <span class="nav-icon">🧾</span> New Bill
+    </a>
+    <a href="/billing/list" class="nav-item">
+      <span class="nav-icon">📋</span> Bill History
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+        <div class="user-role">Pharmacist</div>
+      </div>
+    </div>
+    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;
+       color:#94a3b8;font-size:13px;transition:.18s ease;"
+       onmouseover="this.style.background='rgba(255,255,255,.06)'"
+       onmouseout="this.style.background='transparent'">
+      🚪 Sign Out
+    </a>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<div class="main-wrapper">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-title">
+      Dashboard
+      <small>Welcome back — here's what's happening today</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
+      <a href="/medicine/add" class="topbar-btn btn-outline">➕ Add Medicine</a>
+    </div>
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content">
+
+    <!-- ─── STAT CARDS ──────────────────────────────────────────── -->
+    <div class="stat-grid">
+
+      <div class="stat-card">
+        <div class="stat-icon teal">💊</div>
+        <div class="stat-info">
+          <div class="stat-label">Total Medicines</div>
+          <div class="stat-value" th:text="${totalMedicines}">0</div>
+          <div class="stat-sub">In inventory</div>
+        </div>
+      </div>
+
+      <div class="stat-card" th:classappend="${lowStockCount > 0 ? 'stat-danger' : ''}">
+        <div class="stat-icon red">⚠️</div>
+        <div class="stat-info">
+          <div class="stat-label">Low Stock</div>
+          <div class="stat-value" th:text="${lowStockCount}">0</div>
+          <div class="stat-sub">Stock ≤ 10 units</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon blue">📋</div>
+        <div class="stat-info">
+          <div class="stat-label">Total Bills</div>
+          <div class="stat-value" th:text="${totalBills}">0</div>
+          <div class="stat-sub">All time</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon amber">💰</div>
+        <div class="stat-info">
+          <div class="stat-label">Today's Sales</div>
+          <div class="stat-value">
+            ₹<span th:text="${#numbers.formatDecimal(todaySales, 1, 2)}">0.00</span>
+          </div>
+          <div class="stat-sub">Including GST</div>
+        </div>
+      </div>
+
+    </div><!-- /stat-grid -->
+
+    <!-- ─── BOTTOM ROW ────────────────────────────────────────────── -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px">
+
+      <!-- Low Stock Medicines -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">⚠️ Low Stock Medicines</div>
+          <a href="/medicine/show" style="font-size:12px;color:var(--primary);font-weight:600">View all →</a>
+        </div>
+        <div class="table-wrap">
+          <table class="pharma-table">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Type</th>
+                <th class="num">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(lowStockMeds)}">
+                <td colspan="3" style="text-align:center;color:var(--text-muted);padding:24px">
+                  ✅ All medicines are well stocked
+                </td>
+              </tr>
+              <tr th:each="med : ${lowStockMeds}">
+                <td th:text="${med.name}">—</td>
+                <td>
+                  <span class="badge badge-muted" th:text="${med.type}">—</span>
+                </td>
+                <td class="num">
+                  <span class="badge"
+                    th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : 'badge-warning'}"
+                    th:text="${med.stockQuantity}">0</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Bills -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧾 Recent Bills</div>
+          <a href="/billing/list" style="font-size:12px;color:var(--primary);font-weight:600">View all →</a>
+        </div>
+        <div class="table-wrap">
+          <table class="pharma-table">
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Patient</th>
+                <th class="num">Grand Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(recentBills)}">
+                <td colspan="3" style="text-align:center;color:var(--text-muted);padding:24px">
+                  No bills yet
+                </td>
+              </tr>
+              <tr th:each="bill : ${recentBills}">
+                <td>
+                  <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                     th:text="${bill.billNumber}"
+                     style="color:var(--primary);font-weight:600;font-family:var(--font-mono)">—</a>
+                </td>
+                <td th:text="${bill.patientName ?: '—'}">—</td>
+                <td class="num fw-bold text-primary">
+                  ₹<span th:text="${#numbers.formatDecimal(bill.grandTotal, 1, 2)}">0.00</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /bottom-row -->
+
+  </div><!-- /page-content -->
+</div><!-- /main-wrapper -->
+
 </body>
-
-<footer>
-<h3>All rights reserved @SpringPharm</h3>
-
-</footer>
 </html>

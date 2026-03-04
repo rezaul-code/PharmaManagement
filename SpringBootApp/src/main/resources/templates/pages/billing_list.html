@@ -1,41 +1,116 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head><title>Bills</title></head>
- <link rel="stylesheet" th:href="@{/css/style.css}">
-
-
-<header>
-	<h2>Welcome to SpringPharma</h2>
-	 <a href="/logout">Logout</a>
-
-</header>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bill History — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
 <body>
-<main class="ninethstyle">
-<div>
-    <h2>Bills</h2>
-    <a th:href="@{/billing/new}">+ New Bill</a>
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💊</div>
+    <div class="brand-text">
+      <span class="brand-name">PharmaManage</span>
+      <span class="brand-sub">v2.0 Pro</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/dashboard" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+    <div class="nav-section-label">Medicine</div>
+    <a href="/medicine/show" class="nav-item"><span class="nav-icon">💊</span> All Medicines</a>
+    <a href="/medicine/add"  class="nav-item"><span class="nav-icon">➕</span> Add Medicine</a>
+    <div class="nav-section-label">Billing</div>
+    <a href="/billing/new"  class="nav-item"><span class="nav-icon">🧾</span> New Bill</a>
+    <a href="/billing/list" class="nav-item active"><span class="nav-icon">📋</span> Bill History</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+        <div class="user-role">Pharmacist</div>
+      </div>
+    </div>
+    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;">🚪 Sign Out</a>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Bill History
+      <small>All billing records, most recent first</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 All Bills</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${bills.size()} + ' record(s)'">0 records</span>
+      </div>
+      <div class="table-wrap">
+        <table class="pharma-table">
+          <thead>
+            <tr>
+              <th>Bill #</th>
+              <th>Patient</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th class="num">Subtotal</th>
+              <th class="num">GST</th>
+              <th class="num">Grand Total</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(bills)}">
+              <td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">
+                No bills found. <a href="/billing/new" style="color:var(--primary);font-weight:600">Create the first one →</a>
+              </td>
+            </tr>
+            <tr th:each="bill : ${bills}">
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   th:text="${bill.billNumber}"
+                   style="color:var(--primary);font-weight:700;font-family:var(--font-mono)">—</a>
+              </td>
+              <td th:text="${bill.patientName ?: 'Walk-in'}">—</td>
+              <td style="color:var(--text-muted)" th:text="${bill.patientPhone ?: '—'}">—</td>
+              <td style="color:var(--text-muted);font-size:12.5px"
+                  th:text="${#temporals.format(bill.createdAt, 'dd MMM yyyy, hh:mm a')}">—</td>
+              <td class="num">₹<span th:text="${#numbers.formatDecimal(bill.subtotal, 1, 2)}">0.00</span></td>
+              <td class="num" style="color:var(--warning)">₹<span th:text="${#numbers.formatDecimal(bill.totalGst, 1, 2)}">0.00</span></td>
+              <td class="num fw-bold text-primary">₹<span th:text="${#numbers.formatDecimal(bill.grandTotal, 1, 2)}">0.00</span></td>
+              <td>
+                <span class="badge"
+                  th:classappend="${bill.status.name() == 'PAID' ? 'badge-success' : bill.status.name() == 'CANCELLED' ? 'badge-danger' : 'badge-warning'}"
+                  th:text="${bill.status}">PAID</span>
+              </td>
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   class="btn btn-sm btn-outline"
+                   style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
+                   👁 View
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
-
-<table border="1" style="margin-top:12px;">
-    <thead>
-    <tr><th>ID</th><th>Date</th><th>Customer</th><th>Total</th><th>Action</th></tr>
-    </thead>
-    <tbody>
-    <tr th:each="b : ${bills}">
-        <td th:text="${b.id}"></td>
-        <td th:text="${#temporals.format(b.billingDate, 'yyyy-MM-dd HH:mm')}"></td>
-        <td th:text="${b.customerName}">-</td>
-        <td th:text="${b.totalAmount}"></td>
-        <td><a th:href="@{'/billing/' + ${b.id}}">View</a></td>
-    </tr>
-    </tbody>
-</table>
-</main>
 </body>
-
-<footer>
-<h3>All rights reserved @SpringPharm</h3>
-
-</footer>
 </html>

@@ -1,67 +1,104 @@
 package com.myspringboot.SpringBootApp.controller;
 
 import com.myspringboot.SpringBootApp.Service.BillingService;
+import com.myspringboot.SpringBootApp.Service.MedicineService;
+import com.myspringboot.SpringBootApp.dto.BillingForm;
 import com.myspringboot.SpringBootApp.model.Billing;
-import com.myspringboot.SpringBootApp.repo.BillingRepository;
-import com.myspringboot.SpringBootApp.repo.MedicineRepository;
+import com.myspringboot.SpringBootApp.model.BillingItemForm;
+import com.myspringboot.SpringBootApp.model.Medicine;
+import com.myspringboot.SpringBootApp.model.User;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/billing")
 public class BillingController {
 
-    private final BillingService billingService;
-    private final MedicineRepository medicineRepository;
-    private final BillingRepository billingRepository;
+    @Autowired
+    private BillingService billingService;
 
-    public BillingController(BillingService billingService,
-                             MedicineRepository medicineRepository,
-                             BillingRepository billingRepository) {
-        this.billingService = billingService;
-        this.medicineRepository = medicineRepository;
-        this.billingRepository = billingRepository;
-    }
+    @Autowired
+    private MedicineService medicineService;
 
-    // Show new bill form
+    // ─── New Bill Form ────────────────────────────────────────────────
+
     @GetMapping("/new")
-    public String newBill(Model model) {
-        model.addAttribute("bill", new Billing()); // empty bill with no items yet
-        model.addAttribute("medicines", medicineRepository.findAll());
+    public String newBillForm(Model model) {
+        BillingForm form = new BillingForm();
+        // Pre-populate with one empty row
+        List<BillingItemForm> items = new ArrayList<>();
+        items.add(new BillingItemForm());
+        form.setItems(items);
+
+        model.addAttribute("billingForm", form);
+        model.addAttribute("medicines", medicineService.getAll());
         return "pages/billing_new";
     }
 
-    // Save bill with multiple items
-    @PostMapping("/save")
-    public String saveBill(@ModelAttribute Billing bill,
-                           @RequestParam(value = "customerName", required = false) String customerName,
-                           Model model) {
+    // ─── Create Bill ──────────────────────────────────────────────────
+
+    @PostMapping("/create")
+    public String createBill(
+            @ModelAttribute("billingForm") BillingForm form,
+            HttpSession session,
+            Model model) {
+
+        User user = (User) session.getAttribute("loggedInUser");
+
         try {
-            bill.setCustomerName(customerName);
-            Billing saved = billingService.createBillWithItems(bill);
-            return "redirect:/billing/" + saved.getId();
+            Billing billing = billingService.createBill(form, user);
+            return "redirect:/billing/view/" + billing.getId();
         } catch (Exception e) {
-            model.addAttribute("bill", bill);
-            model.addAttribute("medicines", medicineRepository.findAll());
-            model.addAttribute("error", e.getMessage());
+            model.addAttribute("error", "Failed to create bill: " + e.getMessage());
+            model.addAttribute("billingForm", form);
+            model.addAttribute("medicines", medicineService.getAll());
             return "pages/billing_new";
         }
     }
 
-    // Show all bills
-    @GetMapping
+    // ─── View Single Bill ─────────────────────────────────────────────
+
+    @GetMapping("/view/{id}")
+    public String viewBill(@PathVariable Long id, Model model) {
+        Optional<Billing> billing = billingService.getBillById(id);
+        if (billing.isEmpty()) {
+            return "redirect:/billing/list";
+        }
+        model.addAttribute("billing", billing.get());
+        return "pages/billing_view";
+    }
+
+    // ─── Bill List ────────────────────────────────────────────────────
+
+    @GetMapping("/list")
     public String listBills(Model model) {
-        model.addAttribute("bills", billingRepository.findAll());
+        model.addAttribute("bills", billingService.getAllBills());
         return "pages/billing_list";
     }
 
-    // View bill details
-    @GetMapping("/{id}")
-    public String viewBill(@PathVariable Long id, Model model) {
-        Billing bill = billingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bill not found: " + id));
-        model.addAttribute("bill", bill);
-        return "pages/billing_view";
+    // ─── Medicine Autocomplete API ────────────────────────────────────
+
+    @GetMapping("/medicine/search")
+    @ResponseBody
+    public List<Medicine> searchMedicine(@RequestParam("q") String query) {
+        return medicineService.searchByName(query);
+    }
+
+    // ─── Medicine Detail by ID (for auto-fill price / GST) ───────────
+
+    @GetMapping("/medicine/{id}")
+    @ResponseBody
+    public ResponseEntity<Medicine> getMedicineById(@PathVariable Long id) {
+        return medicineService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

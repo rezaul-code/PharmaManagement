@@ -1,122 +1,87 @@
 package com.myspringboot.SpringBootApp.model;
 
-import java.sql.Date;
-import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 @Entity
-@Table(name = "medicine")
+@Table(name = "medicines")
 public class Medicine {
 
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int id;
-	private String name;
-	private String description;
-	private String manufacturer;
-	private Double price;
-	private Integer quantity;
-	private Date expiry_date;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime created_at;
+    @Column(nullable = false)
+    private String name;
 
-	@PrePersist
-	protected void onCreate() {
-		created_at = LocalDateTime.now();
-	}
-	
-	@Enumerated(EnumType.STRING)
-	@Column(name = "medicineType", nullable = false)
-	private MedicineType medicineType;
+    private String manufacturer;
 
-	
-	
-	
+    private String batchNo;
 
-	public MedicineType getMedicineType() {
-		return medicineType;
-	}
+    @Column(precision = 10, scale = 2)
+    private BigDecimal price;
 
-	public void setMedicineType(MedicineType medicineType) {
-		this.medicineType = medicineType;
-	}
+    // GST percentage (e.g., 5.0, 12.0, 18.0)
+    @Column(name = "gst_percentage", precision = 5, scale = 2)
+    private BigDecimal gstPercentage = BigDecimal.ZERO;
 
-	public int getId() {
-		return id;
-	}
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity = 0;
 
-	public void setId(int id) {
-		this.id = id;
-	}
+    @Enumerated(EnumType.STRING)
+    private MedicineType type;
 
-	public String getName() {
-		return name;
-	}
+    @Column(name = "expiry_date")
+    private String expiryDate;
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    private String description;
 
-	public String getDescription() {
-		return description;
-	}
+    // ─── Constructors ───────────────────────────────────────────────
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public Medicine() {}
 
-	public String getManufacturer() {
-		return manufacturer;
-	}
+    public Medicine(String name, BigDecimal price, BigDecimal gstPercentage, Integer stockQuantity) {
+        this.name = name;
+        this.price = price;
+        this.gstPercentage = gstPercentage;
+        this.stockQuantity = stockQuantity;
+    }
 
-	public void setManufacturer(String manufacturer) {
-		this.manufacturer = manufacturer;
-	}
+    // ─── Getters & Setters ──────────────────────────────────────────
 
-	
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	public Double getPrice() {
-		return price;
-	}
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-	public void setPrice(Double price) {
-		this.price = price;
-	}
+    public String getManufacturer() { return manufacturer; }
+    public void setManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
 
-	public Integer getQuantity() {
-		return quantity;
-	}
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
 
-	public void setQuantity(Integer quantity) {
-		this.quantity = quantity;
-	}
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 
-	public Date getExpiry_date() {
-		return expiry_date;
-	}
+    public BigDecimal getGstPercentage() { return gstPercentage; }
+    public void setGstPercentage(BigDecimal gstPercentage) { this.gstPercentage = gstPercentage; }
 
-	public void setExpiry_date(Date expiry_date) {
-		this.expiry_date = expiry_date;
-	}
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
-	public LocalDateTime getCreated_at() {
-		return created_at;
-	}
+    public MedicineType getType() { return type; }
+    public void setType(MedicineType type) { this.type = type; }
 
-	public void setCreated_at(LocalDateTime created_at) {
-		this.created_at = created_at;
-	}
+    public String getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(String expiryDate) { this.expiryDate = expiryDate; }
 
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    // ─── Helper ─────────────────────────────────────────────────────
+
+    public boolean isLowStock() {
+        return stockQuantity != null && stockQuantity <= 10;
+    }
 }

@@ -1,34 +1,363 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>SpringPharma</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpringPharma — Professional Pharmacy Management</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    /* ── Landing-page-only styles ──────────────────────────────── */
+    .landing-page {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #0f172a 0%, #134e4a 60%, #0f172a 100%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top nav bar */
+    .landing-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 60px;
+    }
+
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .landing-brand .brand-pill {
+      background: var(--primary);
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 20px;
+    }
+
+    .landing-brand .brand-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: #f1f5f9;
+      letter-spacing: -.4px;
+    }
+
+    .landing-brand .brand-tagline {
+      font-size: 11px;
+      color: #64748b;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    .landing-nav-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      padding: 9px 22px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s ease;
+      border: none;
+      font-family: var(--font-main);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn-ghost {
+      background: rgba(255,255,255,.06);
+      color: #cbd5e1;
+      border: 1.5px solid rgba(255,255,255,.1);
+    }
+
+    .nav-btn-ghost:hover {
+      background: rgba(255,255,255,.12);
+      color: #fff;
+    }
+
+    .nav-btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .nav-btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Hero section */
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 24px 40px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(13,148,136,.18);
+      border: 1px solid rgba(13,148,136,.35);
+      color: #5eead4;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      margin-bottom: 28px;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 6vw, 64px);
+      font-weight: 900;
+      color: #f1f5f9;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      max-width: 760px;
+      margin-bottom: 22px;
+    }
+
+    .hero-title .accent {
+      color: var(--primary);
+    }
+
+    .hero-subtitle {
+      font-size: 17px;
+      color: #94a3b8;
+      max-width: 520px;
+      line-height: 1.65;
+      margin-bottom: 44px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .cta-btn {
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font-main);
+      transition: all .2s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cta-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(13,148,136,.4);
+    }
+
+    .cta-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(13,148,136,.5);
+    }
+
+    .cta-outline {
+      background: transparent;
+      color: #cbd5e1;
+      border: 1.5px solid rgba(255,255,255,.18);
+    }
+
+    .cta-outline:hover {
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      border-color: rgba(255,255,255,.3);
+    }
+
+    /* Feature cards strip */
+    .features-strip {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 40px 60px;
+      flex-wrap: wrap;
+    }
+
+    .feature-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      padding: 12px 20px;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .18s ease;
+    }
+
+    .feature-chip:hover {
+      background: rgba(13,148,136,.1);
+      border-color: rgba(13,148,136,.3);
+      color: #5eead4;
+    }
+
+    .feature-chip .chip-icon {
+      font-size: 18px;
+    }
+
+    /* Footer */
+    .landing-footer {
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 20px 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #475569;
+      font-size: 12.5px;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 48px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-item .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+
+    .stat-item .stat-lbl {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-top: 2px;
+    }
+
+    .stat-divider {
+      width: 1px;
+      background: rgba(255,255,255,.08);
+      align-self: stretch;
+    }
+
+    @media (max-width: 640px) {
+      .landing-nav   { padding: 16px 20px; }
+      .landing-footer{ padding: 16px 20px; flex-direction:column; gap:6px; text-align:center; }
+      .features-strip{ padding: 0 20px 40px; }
+      .stat-divider  { display: none; }
+    }
+  </style>
 </head>
-
-
-<header>
-    <h2>Welcome to SpringPharma</h2>
-</header>
-
 <body>
 
-<div class="firststyle">
+<div class="landing-page">
 
-<h2>Start with following</h2>
-<div class="follow-table-index">
-    <div class="follow-row-index">
-        <div class="follow-cell-index"><a href="/login">Log in</a></div>
-        <div class="follow-cell-index"><a href="/signup">Sign up</a></div>
+  <!-- ── Top Nav ──────────────────────────────────────────────── -->
+  <nav class="landing-nav">
+    <div class="landing-brand">
+      <div class="brand-pill">💊</div>
+      <div>
+        <div class="brand-name">SpringPharma</div>
+        <div class="brand-tagline">Management System</div>
+      </div>
     </div>
-</div>
+
+    <div class="landing-nav-links">
+      <a href="/login"  class="nav-btn nav-btn-ghost">🔐 Log In</a>
+      <a href="/signup" class="nav-btn nav-btn-primary">✨ Sign Up</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ─────────────────────────────────────────────────── -->
+  <section class="hero">
+
+    <div class="hero-badge">
+      ✦ Professional Pharmacy Management &nbsp;·&nbsp; v2.0 Pro
+    </div>
+
+    <h1 class="hero-title">
+      Manage Your Pharmacy<br/>
+      <span class="accent">Smarter &amp; Faster</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      Complete inventory control, automated GST billing, low-stock alerts,
+      and printable invoices — all in one clean dashboard.
+    </p>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">GST</div>
+        <div class="stat-lbl">Auto Calculated</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-num">∞</div>
+        <div class="stat-lbl">Medicine Records</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-num">🖨</div>
+        <div class="stat-lbl">Print Invoices</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-num">⚡</div>
+        <div class="stat-lbl">Real-time Stock</div>
+      </div>
+    </div>
+
+    <!-- CTA Buttons -->
+    <div class="hero-cta">
+      <a href="/signup" class="cta-btn cta-primary">
+        🚀 Get Started — It's Free
+      </a>
+      <a href="/login" class="cta-btn cta-outline">
+        🔐 Sign In to Dashboard
+      </a>
+    </div>
+
+  </section>
+
+  <!-- ── Feature Chips ─────────────────────────────────────────── -->
+  <div class="features-strip">
+    <div class="feature-chip"><span class="chip-icon">💊</span> Medicine Inventory</div>
+    <div class="feature-chip"><span class="chip-icon">🧾</span> GST Billing</div>
+    <div class="feature-chip"><span class="chip-icon">📊</span> Dashboard Analytics</div>
+    <div class="feature-chip"><span class="chip-icon">⚠️</span> Low Stock Alerts</div>
+    <div class="feature-chip"><span class="chip-icon">🖨</span> Printable Invoices</div>
+    <div class="feature-chip"><span class="chip-icon">🔐</span> Secure Auth</div>
+  </div>
+
+  <!-- ── Footer ────────────────────────────────────────────────── -->
+  <footer class="landing-footer">
+    <span>© <span th:text="${#dates.year(#dates.createNow())}">2025</span> SpringPharma. All rights reserved.</span>
+    <span style="color:#334155">Built with Spring Boot · Thymeleaf · Java</span>
+  </footer>
 
 </div>
 
 </body>
-
-<footer>
-    <h3>All rights reserved @SpringPharm</h3>
-</footer>
-
-
 </html>

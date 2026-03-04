@@ -1,66 +1,183 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-<title>Add Medicine</title>
-<link rel="stylesheet" th:href="@{/css/style.css}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Medicine — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
-
-<header>
-	<h2>Welcome to SpringPharma</h2>
-	 <a href="/logout">Logout</a>
-
-</header>
-
 <body>
 
-	<div class="fifthstyle">
-	<h2>Add New Medicine</h2>
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💊</div>
+    <div class="brand-text">
+      <span class="brand-name">PharmaManage</span>
+      <span class="brand-sub">v2.0 Pro</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/dashboard" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+    <div class="nav-section-label">Medicine</div>
+    <a href="/medicine/show" class="nav-item"><span class="nav-icon">💊</span> All Medicines</a>
+    <a href="/medicine/add"  class="nav-item active"><span class="nav-icon">➕</span> Add Medicine</a>
+    <div class="nav-section-label">Billing</div>
+    <a href="/billing/new"  class="nav-item"><span class="nav-icon">🧾</span> New Bill</a>
+    <a href="/billing/list" class="nav-item"><span class="nav-icon">📋</span> Bill History</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+        <div class="user-role">Pharmacist</div>
+      </div>
+    </div>
+    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;">🚪 Sign Out</a>
+  </div>
+</aside>
 
-	<form th:action="@{/add_medicine}" th:object="${medicine}"
-		method="post">
-		<div>
-			<label for="name">Name:</label> <input type="text" id="name"
-				th:field="*{name}" required>
-		</div>
-		<div>
-			<label for="description">Description:</label> <input type="text"
-				id="description" th:field="*{description}" required>
-		</div>
-		<div>
-			<label for="medicineType">Medicine Type:</label> <select
-				id="medicineType" th:field="*{medicineType}" required>
-				<option value="" disabled selected>Select type</option>
-				<option
-					th:each="type : ${T(com.myspringboot.SpringBootApp.model.MedicineType).values()}"
-					th:value="${type}" th:text="${type}"></option>
-			</select>
-		</div>
+<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Add Medicine
+      <small>Add a new medicine to the inventory</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/medicine/show" class="topbar-btn btn-outline">← Back to List</a>
+    </div>
+  </div>
 
-		<div>
-			<label for="manufacturer">Manufacturer:</label> <input type="text"
-				id="manufacturer" th:field="*{manufacturer}" required>
-		</div>
-		<div>
-			<label for="price">Price:</label> <input type="number" step="0.01"
-				id="price" th:field="*{price}" required>
-		</div>
-		<div>
-			<label for="quantity">Quantity:</label> <input type="number"
-				id="quantity" th:field="*{quantity}" required>
-		</div>
-		<div>
-			<label for="expiry_date">Expiry Date:</label> <input type="date"
-				id="expiry_date" th:field="*{expiry_date}" required>
-		</div>
-		<button type="submit">Save</button>
-	</form>
+  <div class="page-content">
+    <div style="max-width:760px;margin:0 auto">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💊 Medicine Details</div>
+        </div>
+        <div class="card-body">
 
-	</div>
+          <form th:action="@{/medicine/add}" method="post"
+                th:object="${medicine}">
 
+            <!-- Row 1: Name + Type -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div class="form-group">
+                <label class="form-label">Medicine Name *</label>
+                <input type="text" class="form-control"
+                       th:field="*{name}" required
+                       placeholder="e.g. Paracetamol 500mg" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type</label>
+                <select class="form-control" th:field="*{type}">
+                  <option value="">— Select type —</option>
+                  <option th:each="t : ${T(com.myspringboot.SpringBootApp.model.MedicineType).values()}"
+                          th:value="${t}" th:text="${t}">TYPE</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 2: Manufacturer + Batch No -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div class="form-group">
+                <label class="form-label">Manufacturer</label>
+                <input type="text" class="form-control"
+                       th:field="*{manufacturer}"
+                       placeholder="e.g. Sun Pharma" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Batch No</label>
+                <input type="text" class="form-control"
+                       th:field="*{batchNo}"
+                       placeholder="e.g. BT-2024-001" />
+              </div>
+            </div>
+
+            <!-- Row 3: Price + GST + Stock -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+              <div class="form-group">
+                <label class="form-label">Unit Price (₹) *</label>
+                <input type="number" class="form-control"
+                       th:field="*{price}" required
+                       step="0.01" min="0" placeholder="0.00" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">GST Percentage (%)</label>
+                <select class="form-control" th:field="*{gstPercentage}">
+                  <option value="0">0% (Exempt)</option>
+                  <option value="5">5%</option>
+                  <option value="12">12%</option>
+                  <option value="18">18%</option>
+                  <option value="28">28%</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stock Quantity *</label>
+                <input type="number" class="form-control"
+                       th:field="*{stockQuantity}" required
+                       min="0" placeholder="0" />
+              </div>
+            </div>
+
+            <!-- Row 4: Expiry + Description -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+              <div class="form-group">
+                <label class="form-label">Expiry Date</label>
+                <input type="month" class="form-control"
+                       th:field="*{expiryDate}" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <input type="text" class="form-control"
+                       th:field="*{description}"
+                       placeholder="Short note (optional)" />
+              </div>
+            </div>
+
+            <!-- GST Preview -->
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
+                        padding:14px 18px;margin-bottom:20px;font-size:13px">
+              <strong style="color:#166534">💡 GST Preview</strong>
+              <span style="color:#166534;margin-left:8px">
+                For a unit price of ₹<span id="previewPrice">100</span>
+                at <span id="previewGstPct">0</span>% GST →
+                GST amount = ₹<span id="previewGstAmt">0.00</span>,
+                Final price = ₹<span id="previewFinal">100.00</span>
+              </span>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success btn-lg">✅ Save Medicine</button>
+              <a href="/medicine/show" class="btn btn-secondary btn-lg">Cancel</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Live GST preview
+function updatePreview() {
+  const price   = parseFloat(document.querySelector('[name="price"]')?.value || 100);
+  const gstPct  = parseFloat(document.querySelector('[name="gstPercentage"]')?.value || 0);
+  const gstAmt  = price * gstPct / 100;
+  const final_  = price + gstAmt;
+
+  document.getElementById('previewPrice').textContent   = price.toFixed(2);
+  document.getElementById('previewGstPct').textContent  = gstPct;
+  document.getElementById('previewGstAmt').textContent  = gstAmt.toFixed(2);
+  document.getElementById('previewFinal').textContent   = final_.toFixed(2);
+}
+
+document.querySelector('[name="price"]')?.addEventListener('input', updatePreview);
+document.querySelector('[name="gstPercentage"]')?.addEventListener('change', updatePreview);
+document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
 </body>
-
-<footer>
-	<h3>All rights reserved @SpringPharm</h3>
-
-</footer>
 </html>

@@ -1,9 +1,20 @@
 package com.myspringboot.SpringBootApp.repo;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.myspringboot.SpringBootApp.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface UserRepository extends JpaRepository <User,Long> {
-	 User findByEmail(String email);
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    // Login by email
+    User findByEmail(String email);
+
+    // Login by phone
+    User findByPhone(String phone);
+
+    // Signup duplicate checks
+    User findByUsername(String username);
+    boolean existsByEmail(String email);
+    boolean existsByPhone(String phone);
 }

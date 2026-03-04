@@ -1,31 +1,60 @@
 package com.myspringboot.SpringBootApp.model;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
+/**
+ * Form-backing object for a single billing line item.
+ * Submitted as part of BillingForm (list of items).
+ */
 public class BillingItemForm {
-    @NotNull
-    private Long medicineId;
 
-    @NotNull
-    @Min(1)
+    private Long medicineId;
+    private String medicineName;
+    private String batchNo;
     private Integer quantity;
 
-	public Long getMedicineId() {
-		return medicineId;
-	}
+    private BigDecimal unitPrice;
 
-	public void setMedicineId(Long medicineId) {
-		this.medicineId = medicineId;
-	}
+    // GST % (e.g. 12.00)
+    private BigDecimal gstPercentage = BigDecimal.ZERO;
 
-	public Integer getQuantity() {
-		return quantity;
-	}
+    // ─── Computed helpers (populated by JS / backend) ────────────────
 
-	public void setQuantity(Integer quantity) {
-		this.quantity = quantity;
-	}
+    // itemTotal = unitPrice * quantity
+    private BigDecimal itemTotal;
 
-    // getters/setters
+    // gstAmount = itemTotal * gstPercentage / 100
+    private BigDecimal gstAmount;
+
+    // totalAmount = itemTotal + gstAmount
+    private BigDecimal totalAmount;
+
+    // ─── Getters & Setters ───────────────────────────────────────────
+
+    public Long getMedicineId() { return medicineId; }
+    public void setMedicineId(Long medicineId) { this.medicineId = medicineId; }
+
+    public String getMedicineName() { return medicineName; }
+    public void setMedicineName(String medicineName) { this.medicineName = medicineName; }
+
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+    public BigDecimal getGstPercentage() { return gstPercentage; }
+    public void setGstPercentage(BigDecimal gstPercentage) { this.gstPercentage = gstPercentage; }
+
+    public BigDecimal getItemTotal() { return itemTotal; }
+    public void setItemTotal(BigDecimal itemTotal) { this.itemTotal = itemTotal; }
+
+    public BigDecimal getGstAmount() { return gstAmount; }
+    public void setGstAmount(BigDecimal gstAmount) { this.gstAmount = gstAmount; }
+
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
 }

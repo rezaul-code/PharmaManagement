@@ -1,94 +1,144 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>SpringPharm</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medicines — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
-
-
-    <header>
-        <h2>Welcome to SpringPharma</h2>
-         <a href="/logout">Logout</a>
-    </header>
-
 <body>
-    
-    <main class="sixthstyle">
-       
 
-        <!-- Search Form -->
-        <form th:action="@{/show_medicine}" method="get" class="search-form">
-            <div>
-                
-                <input type="number" id="id" name="id" th:value="${searchId}" placeholder="id">
-            </div>
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💊</div>
+    <div class="brand-text">
+      <span class="brand-name">PharmaManage</span>
+      <span class="brand-sub">v2.0 Pro</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/dashboard" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+    <div class="nav-section-label">Medicine</div>
+    <a href="/medicine/show" class="nav-item active"><span class="nav-icon">💊</span> All Medicines</a>
+    <a href="/medicine/add"  class="nav-item"><span class="nav-icon">➕</span> Add Medicine</a>
+    <div class="nav-section-label">Billing</div>
+    <a href="/billing/new"  class="nav-item"><span class="nav-icon">🧾</span> New Bill</a>
+    <a href="/billing/list" class="nav-item"><span class="nav-icon">📋</span> Bill History</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+        <div class="user-role">Pharmacist</div>
+      </div>
+    </div>
+    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;">🚪 Sign Out</a>
+  </div>
+</aside>
 
-            <div>
-               
-                <input type="text" id="name" name="name" th:value="${searchName}" placeholder="name">
-            </div>
+<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Medicine Inventory
+      <small>Manage stock, prices, and GST rates</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/medicine/add" class="topbar-btn btn-primary">➕ Add Medicine</a>
+    </div>
+  </div>
 
-            <div>
-                <input type="text" id="description" name="description" th:value="${searchDescription}" placeholder="Description">
-            </div>
+  <div class="page-content">
+    <!-- Search bar -->
+    <div class="card mb-4">
+      <div class="card-body" style="padding:14px 20px">
+        <input type="text" class="form-control" id="medSearch"
+               placeholder="🔍  Search medicines by name…"
+               oninput="filterTable()"
+               style="max-width:420px" />
+      </div>
+    </div>
 
-            <div>
-                
-                <select id="type" name="type">
-                    <option value="">--Select--</option>
-                    <option th:each="t : ${types}"
-                            th:value="${t}"
-                            th:text="${t}"
-                            th:selected="${t} == ${searchType}">
-                    </option>
-                </select>
-            </div>
-
-            <div class="search-buttons">
-                <button type="submit">Search</button>
-                <a th:href="@{/show_medicine}" class="btn-reset">Reset</a>
-            </div>
-        </form>
-
-        <!-- Medicines Table -->
-        <table class="medicine-table">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Manufacturer</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Expiry Date</th>
-                    <th>Type</th>
-                    <th>Button</th>
-                    <th>Button</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="med : ${medicines}">
-                    <td th:text="${med.id}"></td>
-                    <td th:text="${med.name}"></td>
-                    <td th:text="${med.description}"></td>
-                    <td th:text="${med.manufacturer}"></td>
-                    <td th:text="${med.price}"></td>
-                    <td th:text="${med.quantity}"></td>
-                    <td th:text="${med.expiry_date}"></td>																																																																	
-                    <td th:text="${med.medicineType}"></td>
-                    <td><a th:href="@{/med_edit(id=${med.id})}"><i class="material-icons" style="font-size:18px;color:green">edit</i></a></td>
-                    <td> <a th:href="@{'/med_delete?id=' + ${med.id}}" onclick="return confirm('Are you sure?')"><i class="material-icons" style="font-size:18px;color:red">delete</i></a></td>
-                </tr>
-            </tbody>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">💊 All Medicines</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${medicines.size()} + ' item(s)'">0 items</span>
+      </div>
+      <div class="table-wrap">
+        <table class="pharma-table" id="medTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Manufacturer</th>
+              <th>Batch No</th>
+              <th>Expiry</th>
+              <th class="num">Price (₹)</th>
+              <th class="num">GST %</th>
+              <th class="num">Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(medicines)}">
+              <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">
+                No medicines found. <a href="/medicine/add" style="color:var(--primary);font-weight:600">Add one →</a>
+              </td>
+            </tr>
+            <tr th:each="med, iStat : ${medicines}">
+              <td th:text="${iStat.count}" style="color:var(--text-muted)">1</td>
+              <td>
+                <strong th:text="${med.name}">—</strong>
+                <div style="font-size:11.5px;color:var(--text-muted)" th:text="${med.description}"></div>
+              </td>
+              <td>
+                <span class="badge badge-info" th:if="${med.type != null}" th:text="${med.type}">—</span>
+                <span style="color:var(--text-muted)" th:if="${med.type == null}">—</span>
+              </td>
+              <td th:text="${med.manufacturer ?: '—'}" style="color:var(--text-muted)">—</td>
+              <td style="font-family:var(--font-mono);font-size:12px" th:text="${med.batchNo ?: '—'}">—</td>
+              <td style="font-size:12.5px" th:text="${med.expiryDate ?: '—'}">—</td>
+              <td class="num fw-bold">
+                ₹<span th:text="${#numbers.formatDecimal(med.price, 1, 2)}">0.00</span>
+              </td>
+              <td class="num">
+                <span class="badge badge-muted"
+                      th:text="${med.gstPercentage} + '%'">0%</span>
+              </td>
+              <td class="num">
+                <span class="badge"
+                  th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : med.stockQuantity <= 10 ? 'badge-warning' : 'badge-success'}"
+                  th:text="${med.stockQuantity}">0</span>
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <a th:href="@{/medicine/edit/{id}(id=${med.id})}"
+                     class="btn btn-sm btn-primary">✏️ Edit</a>
+                  <a th:href="@{/medicine/delete/{id}(id=${med.id})}"
+                     class="btn btn-sm btn-danger"
+                     onclick="return confirm('Delete this medicine?')">🗑</a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
-    </main>
-    
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterTable() {
+  const q = document.getElementById('medSearch').value.toLowerCase();
+  document.querySelectorAll('#medTable tbody tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+</script>
 </body>
-
-
-    <footer>
-        <h3>All rights reserved @SpringPharm</h3>
-    </footer>
-
 </html>

@@ -1,32 +1,65 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Sign Up</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
-
-<header>
-    <h2>Welcome to SpringPharma</h2>
-</header>
-
 <body>
 
-	<div class="secondstyle">
-    <h2>Sign up here</h2>
-    
-    <form action="/signup" method="post" th:object="${user}">
-        <input type="text" name="username" placeholder="Enter Username" required>
-        <input type="email" name="email" placeholder="Enter your Email" required>
-        <input type="text" name="phone" placeholder="Enter your Phone Number" required>
-        <input type="password" name="password" placeholder="Set your Password" required>
-        <button type="submit">Submit</button>
-    </form>
-    <p>Already registered login here <a href="/login">login</a></p>
-    
-    </div>
-</body>
+<div class="auth-page">
+  <div class="auth-card">
 
-<footer>
-    <h3>All rights reserved @SpringPharm</h3>
-</footer>
+    <div class="auth-logo">
+      <div class="logo-icon">💊</div>
+      <div class="logo-title">Create Account</div>
+      <div class="logo-sub">PharmaManage — Professional Pharmacy System</div>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger">
+      ⚠️ <span th:text="${error}">Error</span>
+    </div>
+
+    <form th:action="@{/signup}" method="post" th:object="${user}">
+
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-control"
+               th:field="*{username}" placeholder="Your name" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control"
+               th:field="*{email}" placeholder="you@pharmacy.com" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input type="tel" class="form-control"
+               th:field="*{phone}" placeholder="+91 00000 00000" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control"
+               th:field="*{password}" placeholder="Enter password" required />
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg"
+              style="width:100%;justify-content:center;margin-top:8px">
+        ✅ Create Account
+      </button>
+
+    </form>
+
+    <div class="auth-footer-text">
+      Already have an account? <a th:href="@{/login}">Sign in</a>
+    </div>
+
+  </div>
+</div>
+
+</body>
 </html>

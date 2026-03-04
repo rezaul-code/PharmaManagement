@@ -1,36 +1,95 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-<title>Login</title>
-<link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
-
-<header>
-	<h2>SpringPharma Login</h2>
-</header>
-
 <body>
 
-	<div class="thirdstyle">
-	<h2>Log in</h2>
+<div class="auth-page">
+  <div class="auth-card">
 
-	<form action="/login" method="post">
-		<input type="email" name="email" placeholder="Enter your Email"
-			required> <input type="password" name="password"
-			placeholder="Enter your Password" required>
-		<button type="submit">Login</button>
-		<p th:if="${error}" style="color: red;">[[${error}]]</p>
-		
-		<p>New user? Register here <a href="/signup">SignUp</a></p>
-	</form>
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="logo-icon">&#128138;</div>
+      <div class="logo-title">PharmaManage</div>
+      <div class="logo-sub">Professional Pharmacy System</div>
+    </div>
 
+    <!-- Registration success banner -->
+    <div th:if="${param.registered}" class="alert alert-success">
+      Account created! Please sign in.
+    </div>
 
-	<p th:text="${error}" style="color: red;"></p>
-	</div>
-	
+    <!-- Error banner -->
+    <div th:if="${error}" class="alert alert-danger">
+      <span th:text="${error}">Invalid credentials</span>
+    </div>
+
+    <!-- Login form -->
+    <form th:action="@{/login}" method="post">
+
+      <!-- Email or Phone -->
+      <div class="form-group">
+        <label class="form-label">Email or Phone Number</label>
+        <input type="text"
+               name="identifier"
+               class="form-control"
+               placeholder="you@example.com or +91 98765 43210"
+               required
+               autofocus />
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:5px">
+          You can sign in with either your registered email or phone number.
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div style="position:relative">
+          <input type="password"
+                 name="password"
+                 id="passwordInput"
+                 class="form-control"
+                 placeholder="Enter password"
+                 required
+                 style="padding-right:44px" />
+          <!-- Show / hide toggle -->
+          <button type="button"
+                  onclick="togglePassword()"
+                  style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                         background:none;border:none;cursor:pointer;font-size:16px;
+                         color:var(--text-muted);padding:0;line-height:1"
+                  title="Show / hide password">
+            &#128065;
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit"
+              class="btn btn-primary btn-lg"
+              style="width:100%;justify-content:center;margin-top:8px">
+        Sign In
+      </button>
+
+    </form>
+
+    <div class="auth-footer-text">
+      Don't have an account? <a th:href="@{/signup}">Sign up</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function togglePassword() {
+    var input = document.getElementById('passwordInput');
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+</script>
+
 </body>
-
-<footer>
-	<h3>All rights reserved @SpringPharm</h3>
-</footer>
 </html>

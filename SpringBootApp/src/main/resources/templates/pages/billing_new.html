@@ -1,83 +1,181 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Create Bill</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    <meta charset="UTF-8">
-    <style>
-        .invalid {
-            outline: 2px solid #e74c3c;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Bill — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
-
-<header>
-    <h2>Welcome to SpringPharma</h2>
-    <a href="/logout">Logout</a>
-</header>
-
 <body>
-<main class="eightstyle">
-    <h2>Create Bill</h2>
 
-    <div th:if="${error}" style="color:red;" th:text="${error}"></div>
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💊</div>
+    <div class="brand-text">
+      <span class="brand-name">PharmaManage</span>
+      <span class="brand-sub">v2.0 Pro</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/dashboard" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
+    <div class="nav-section-label">Medicine</div>
+    <a href="/medicine/show" class="nav-item"><span class="nav-icon">💊</span> All Medicines</a>
+    <a href="/medicine/add"  class="nav-item"><span class="nav-icon">➕</span> Add Medicine</a>
+    <div class="nav-section-label">Billing</div>
+    <a href="/billing/new"  class="nav-item active"><span class="nav-icon">🧾</span> New Bill</a>
+    <a href="/billing/list" class="nav-item"><span class="nav-icon">📋</span> Bill History</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+        <div class="user-role">Pharmacist</div>
+      </div>
+    </div>
+    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;">🚪 Sign Out</a>
+  </div>
+</aside>
 
-    <form th:action="@{/billing/save}" method="post" style="margin-top:12px;">
-        <div>
-            <label>Customer Name (optional):</label>
-            <input type="text" name="customerName">
+<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      New Bill
+      <small>Create a new billing record with GST calculation</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/billing/list" class="topbar-btn btn-outline">← Back to Bills</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Error Alert -->
+    <div class="alert alert-danger" th:if="${error}">
+      ⚠️ <span th:text="${error}">Error</span>
+    </div>
+
+    <form th:action="@{/billing/create}" method="post"
+          th:object="${billingForm}" id="billingForm">
+
+      <!-- ─── Patient Info ─────────────────────────────────────────── -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">👤 Patient Information</div>
         </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+            <div class="form-group mb-0">
+              <label class="form-label">Patient Name</label>
+              <input type="text" class="form-control"
+                     th:field="*{patientName}"
+                     placeholder="Enter patient name" />
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Phone Number</label>
+              <input type="text" class="form-control"
+                     th:field="*{patientPhone}"
+                     placeholder="+91 00000 00000" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <h3 style="margin-top:12px;">Medicines</h3>
-        <table id="medicineTable" border="1" cellpadding="5">
+      <!-- ─── Medicine Items ───────────────────────────────────────── -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">💊 Medicine Items</div>
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="addItemRow()">
+            ➕ Add Item
+          </button>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="billing-items-table" style="min-width:900px">
             <thead>
-            <tr>
+              <tr>
+                <th style="width:36px">#</th>
                 <th>Medicine</th>
-                <th>Quantity</th>
-                <th>Action</th>
-            </tr>
+                <th>Batch No</th>
+                <th>Qty</th>
+                <th>Unit Price (₹)</th>
+                <th>GST %</th>
+                <th>Item Total (₹)</th>
+                <th>GST Amt (₹)</th>
+                <th>Row Total (₹)</th>
+                <th></th>
+              </tr>
             </thead>
-            <tbody>
-            <!-- initial row -->
-            <tr>
-                <td>
-                    <input type="text" name="items[0].medicineName"
-                           class="medicineInput" required autocomplete="off" />
-                    <input type="hidden" name="items[0].medicineId" class="medicineId" />
-                    <datalist id="medicineList0"></datalist>
-                </td>
-                <td>
-                    <input type="number" name="items[0].quantity" min="1" value="1" required>
-                </td>
-                <td>
-                    <button type="button" class="removeRow">X</button>
-                </td>
-            </tr>
+            <tbody id="billing-items-tbody">
+              <!-- Rows added dynamically by JS -->
             </tbody>
-        </table>
-
-        <button type="button" id="addRow" style="margin-top:8px;">+ Add Medicine</button>
-
-        <div style="margin-top:12px;">
-            <button type="submit">Save Bill</button>
-            <a th:href="@{/billing}">Cancel</a>
+          </table>
         </div>
-    </form>
-</main>
+      </div>
 
-<!-- medicines JSON -->
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    let medicines = /*[[${medicines}]]*/ [];
-    /*]]>*/
-</script>
+      <!-- ─── GST Summary + Submit ─────────────────────────────────── -->
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
 
-<!-- external script -->
-<script src="/js/billing-autocomplete.js"></script>
+        <!-- Notes (optional) -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">📝 Notes</div></div>
+          <div class="card-body">
+            <textarea class="form-control" rows="4"
+                      placeholder="Any notes about this bill…"></textarea>
+            <div class="mt-3 d-flex gap-2">
+              <button type="submit" class="btn btn-success btn-lg">
+                ✅ Save Bill
+              </button>
+              <a href="/billing/list" class="btn btn-secondary btn-lg">Cancel</a>
+            </div>
+          </div>
+        </div>
 
+        <!-- GST Summary -->
+        <div class="gst-summary">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">
+            📊 Bill Summary
+          </div>
+
+          <div class="gst-summary-row">
+            <span class="gst-summary-label">Subtotal (before GST)</span>
+            <span class="gst-summary-value" id="sumSubtotal">₹0.00</span>
+          </div>
+          <div class="gst-summary-row">
+            <span class="gst-summary-label">CGST (50% of GST)</span>
+            <span class="gst-summary-value" id="sumCgst">₹0.00</span>
+          </div>
+          <div class="gst-summary-row">
+            <span class="gst-summary-label">SGST (50% of GST)</span>
+            <span class="gst-summary-value" id="sumSgst">₹0.00</span>
+          </div>
+          <div class="gst-summary-row">
+            <span class="gst-summary-label">Total GST</span>
+            <span class="gst-summary-value" id="sumTotalGst">₹0.00</span>
+          </div>
+          <div class="gst-summary-row grand-total">
+            <span>Grand Total</span>
+            <span id="sumGrandTotal">₹0.00</span>
+          </div>
+        </div>
+
+      </div><!-- /grid -->
+
+      <!-- Hidden summary inputs for form submission -->
+      <input type="hidden" th:field="*{subtotal}"   id="hSubtotal" />
+      <input type="hidden" th:field="*{totalGst}"   id="hTotalGst" />
+      <input type="hidden" th:field="*{cgst}"       id="hCgst" />
+      <input type="hidden" th:field="*{sgst}"       id="hSgst" />
+      <input type="hidden" th:field="*{grandTotal}" id="hGrandTotal" />
+
+    </form><!-- /billingForm -->
+
+  </div><!-- /page-content -->
+</div><!-- /main-wrapper -->
+
+<script th:src="@{/js/billing-autocomplete.js}"></script>
 </body>
-
-<footer>
-    <h3>All rights reserved @SpringPharm</h3>
-</footer>
 </html>
