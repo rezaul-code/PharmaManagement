@@ -5,6 +5,7 @@ import com.myspringboot.SpringBootApp.model.Billing;
 import com.myspringboot.SpringBootApp.model.BillingItem;
 import com.myspringboot.SpringBootApp.model.BillingItemForm;
 import com.myspringboot.SpringBootApp.model.Medicine;
+import com.myspringboot.SpringBootApp.model.Pharmacy;
 import com.myspringboot.SpringBootApp.model.User;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
@@ -28,18 +29,25 @@ public class BillingService {
     @Autowired
     private MedicineRepository medicineRepository;
 
+    @Autowired
+    private TenantPharmacyService tenantPharmacyService;
+
     @Transactional
     public Billing createBill(BillingForm form, User createdBy) {
         if (form == null) {
             throw new IllegalArgumentException("Billing form is required.");
         }
 
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+        Pharmacy pharmacy = tenantPharmacyService.getCurrentPharmacy();
+
         Billing billing = new Billing();
-        billing.setBillNumber(generateBillNumber());
+        billing.setBillNumber(generateBillNumber(pharmacyId));
         billing.setPatientName(form.getPatientName());
         billing.setPatientPhone(form.getPatientPhone());
         billing.setCreatedAt(LocalDateTime.now());
         billing.setCreatedBy(createdBy);
+        billing.setPharmacy(pharmacy);
         billing.setStatus(Billing.BillingStatus.PAID);
 
         if (form.getItems() != null) {
@@ -63,11 +71,10 @@ public class BillingService {
                 BillingItem item = new BillingItem();
 
                 if (hasId) {
-                    Optional<Medicine> medOpt = medicineRepository.findById(itemForm.getMedicineId());
+                    Optional<Medicine> medOpt = medicineRepository.findByIdAndPharmacyId(itemForm.getMedicineId(), pharmacyId);
                     if (medOpt.isPresent()) {
                         Medicine med = medOpt.get();
                         item.setMedicine(med);
-
                         item.setMedicineName(med.getName());
                         item.setBatchNo(
                                 itemForm.getBatchNo() != null && !itemForm.getBatchNo().isBlank()
@@ -96,6 +103,7 @@ public class BillingService {
                                 ? itemForm.getGstPercentage()
                                 : BigDecimal.ZERO
                 );
+                item.setPharmacy(pharmacy);
 
                 item.calculateTotals();
                 billing.addItem(item);
@@ -107,27 +115,28 @@ public class BillingService {
     }
 
     public List<Billing> getAllBills() {
-        return billingRepository.findAllByOrderByCreatedAtDesc();
+        return billingRepository.findByPharmacyIdOrderByCreatedAtDesc(tenantPharmacyService.getCurrentPharmacyId());
     }
 
     public Optional<Billing> getBillById(Long id) {
-        return billingRepository.findById(id);
+        return billingRepository.findByIdAndPharmacyId(id, tenantPharmacyService.getCurrentPharmacyId());
     }
 
     public long getTotalBillCount() {
-        return billingRepository.count();
+        return billingRepository.countByPharmacyId(tenantPharmacyService.getCurrentPharmacyId());
     }
 
     public BigDecimal getTodaySales() {
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
-        BigDecimal total = billingRepository.sumGrandTotalBetween(startOfDay, endOfDay);
+        BigDecimal total = billingRepository.sumGrandTotalBetween(pharmacyId, startOfDay, endOfDay);
         return total != null ? total : BigDecimal.ZERO;
     }
 
-    private String generateBillNumber() {
+    private String generateBillNumber(Long pharmacyId) {
         String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long count = billingRepository.count() + 1;
+        long count = billingRepository.countByPharmacyId(pharmacyId) + 1;
         return String.format("BILL-%s-%04d", date, count);
     }
 }
