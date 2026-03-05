@@ -35,9 +35,9 @@ function addItemRow() {
     <td style="min-width:200px">
       <div class="autocomplete-wrapper">
         <input type="hidden"  name="items[${idx}].medicineId"   id="medId_${idx}" />
-        <input type="hidden"  name="items[${idx}].medicineName" id="medNameHidden_${idx}" />
         <input type="text"
                class="form-control med-name-input"
+               name="items[${idx}].medicineName"
                placeholder="Search medicine..."
                autocomplete="off"
                id="medName_${idx}"
@@ -261,7 +261,6 @@ function selectMedicine(med, idx) {
 
   // Hidden bound inputs — these bind to BillingItemForm fields
   setById(`medId_${idx}`,         med.id       || '');
-  setById(`medNameHidden_${idx}`, med.name     || '');
   setById(`batchNo_${idx}`,       med.batchNo  || '');
   setById(`price_${idx}`,         parseFloat(med.price          || 0).toFixed(2));
   setById(`gst_${idx}`,           parseFloat(med.gstPercentage  || 0).toFixed(2));

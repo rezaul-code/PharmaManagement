@@ -7,11 +7,19 @@ import com.myspringboot.SpringBootApp.model.Billing;
 import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.model.User;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,25 +34,24 @@ public class BillingController {
     @Autowired
     private MedicineService medicineService;
 
-    // ─── New Bill Form ────────────────────────────────────────────────
-
     @GetMapping("/new")
     public String newBillForm(Model model) {
-        // BUG FIX: Do NOT pre-add a BillingItemForm here.
-        // The JS addItemRow() on DOMContentLoaded adds the first row.
-        // Pre-adding here caused a blank item to always be submitted,
-        // which made BillingService skip all items (medicineId == null).
         model.addAttribute("billingForm", new BillingForm());
         return "pages/billing_new";
     }
 
-    // ─── Create Bill ──────────────────────────────────────────────────
-
     @PostMapping("/create")
     public String createBill(
-            @ModelAttribute("billingForm") BillingForm form,
+            @Valid @ModelAttribute("billingForm") BillingForm form,
+            BindingResult bindingResult,
             HttpSession session,
             Model model) {
+
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("error", "Please correct the highlighted billing form fields.");
+            model.addAttribute("billingForm", form);
+            return "pages/billing_new";
+        }
 
         User user = (User) session.getAttribute("loggedInUser");
 
@@ -58,8 +65,6 @@ public class BillingController {
         }
     }
 
-    // ─── View Single Bill ─────────────────────────────────────────────
-
     @GetMapping("/view/{id}")
     public String viewBill(@PathVariable Long id, Model model) {
         Optional<Billing> billing = billingService.getBillById(id);
@@ -70,23 +75,17 @@ public class BillingController {
         return "pages/billing_view";
     }
 
-    // ─── Bill List ────────────────────────────────────────────────────
-
     @GetMapping("/list")
     public String listBills(Model model) {
         model.addAttribute("bills", billingService.getAllBills());
         return "pages/billing_list";
     }
 
-    // ─── Medicine Autocomplete API ────────────────────────────────────
-
     @GetMapping("/medicine/search")
     @ResponseBody
     public List<Medicine> searchMedicine(@RequestParam("q") String query) {
         return medicineService.searchByName(query);
     }
-
-    // ─── Medicine Detail by ID (for auto-fill price / GST) ───────────
 
     @GetMapping("/medicine/{id}")
     @ResponseBody
