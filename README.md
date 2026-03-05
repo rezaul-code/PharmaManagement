@@ -193,37 +193,203 @@ MySQL Database
 # 📁 Project Structure
 
 ```
-Pharmacy-Management-System
-│
-├── controller/
-│   ├── AuthController.java
-│   ├── BillingController.java
-│   └── MedicineController.java
-│
-├── dao/
-│   ├── MedicineDAO.java
-│   └── BillingDAO.java
-│
-├── model/
-│   ├── Medicine.java
-│   ├── Bill.java
-│   └── User.java
-│
-├── util/
-│   └── DBConnection.java
-│
-├── web/
-│   ├── jsp/
-│   │   ├── dashboard.jsp
-│   │   ├── medicines.jsp
-│   │   ├── billing.jsp
-│   │   └── login.jsp
-│   │
-│   ├── css/
-│   └── js/
-│
-└── database/
-    └── pharmacy.sql
+E:\PharmaManagement
+|   README.md
+|
+\---SpringBootApp
+    |   .classpath
+    |   .gitattributes
+    |   .gitignore
+    |   .project
+    |   mvnw
+    |   mvnw.cmd
+    |   pom.xml
+    |
+    +---.mvn
+    |   \---wrapper
+    |           maven-wrapper.properties
+    |
+    +---.settings
+    |       org.eclipse.core.resources.prefs
+    |       org.eclipse.jdt.core.prefs
+    |       org.eclipse.m2e.core.prefs
+    |
+    +---src
+    |   +---main
+    |   |   +---java
+    |   |   |   \---com
+    |   |   |       \---myspringboot
+    |   |   |           \---SpringBootApp
+    |   |   |               |   SpringBootAppApplication.java
+    |   |   |               |
+    |   |   |               +---config
+    |   |   |               |       AuthInterceptor.java
+    |   |   |               |       WebConfig.java
+    |   |   |               |
+    |   |   |               +---controller
+    |   |   |               |       BillingController.java
+    |   |   |               |       HelloController.java
+    |   |   |               |       LoginController.java
+    |   |   |               |       MedicineController.java
+    |   |   |               |       SignUpController.java
+    |   |   |               |
+    |   |   |               +---dto
+    |   |   |               |       BillingForm.java
+    |   |   |               |
+    |   |   |               +---model
+    |   |   |               |       Billing.java
+    |   |   |               |       BillingItem.java
+    |   |   |               |       BillingItemForm.java
+    |   |   |               |       Medicine.java
+    |   |   |               |       MedicineType.java
+    |   |   |               |       User.java
+    |   |   |               |
+    |   |   |               +---repo
+    |   |   |               |       BillingRepository.java
+    |   |   |               |       MedicineRepository.java
+    |   |   |               |       UserRepository.java
+    |   |   |               |
+    |   |   |               \---Service
+    |   |   |                       BillingService.java
+    |   |   |                       MedicineService.java
+    |   |   |
+    |   |   \---resources
+    |   |       |   application.properties
+    |   |       |
+    |   |       +---static
+    |   |       |   +---css
+    |   |       |   |       style.css
+    |   |       |   |
+    |   |       |   \---js
+    |   |       |           billing-autocomplete.js
+    |   |       |
+    |   |       \---templates
+    |   |           |   index.html
+    |   |           |
+    |   |           +---pages
+    |   |           |       add_medicine.html
+    |   |           |       billing_list.html
+    |   |           |       billing_new.html
+    |   |           |       billing_view.html
+    |   |           |       dashboard.html
+    |   |           |       med_edit.html
+    |   |           |       show_medicine.html
+    |   |           |
+    |   |           \---user_auth
+    |   |                   index.html
+    |   |                   user_login.html
+    |   |                   user_signup.html
+    |   |
+    |   \---test
+    |       \---java
+    |           \---com
+    |               \---myspringboot
+    |                   \---SpringBootApp
+    |                           SpringBootAppApplicationTests.java
+    |
+    \---target
+        +---classes
+        |   |   application.properties
+        |   |
+        |   +---com
+        |   |   \---myspringboot
+        |   |       \---SpringBootApp
+        |   |           |   SpringBootAppApplication.class
+        |   |           |
+        |   |           +---config
+        |   |           |       AuthInterceptor.class
+        |   |           |       WebConfig.class
+        |   |           |
+        |   |           +---controller
+        |   |           |       BillingController.class
+        |   |           |       HelloController.class
+        |   |           |       LoginController.class
+        |   |           |       MedicineController.class
+        |   |           |       SignUpController.class
+        |   |           |
+        |   |           +---dto
+        |   |           |       BillingForm.class
+        |   |           |
+        |   |           +---model
+        |   |           |       Billing$BillingStatus.class
+        |   |           |       Billing.class
+        |   |           |       BillingItem.class
+        |   |           |       BillingItemForm.class
+        |   |           |       Medicine.class
+        |   |           |       MedicineType.class
+        |   |           |       User.class
+        |   |           |
+        |   |           +---repo
+        |   |           |       BillingRepository.class
+        |   |           |       MedicineRepository.class
+        |   |           |       UserRepository.class
+        |   |           |
+        |   |           \---Service
+        |   |                   BillingService.class
+        |   |                   MedicineService.class
+        |   |
+        |   +---META-INF
+        |   |   |   MANIFEST.MF
+        |   |   |
+        |   |   \---maven
+        |   |       \---com.myspringboot
+        |   |           \---SpringBootApp
+        |   |                   pom.properties
+        |   |                   pom.xml
+        |   |
+        |   +---static
+        |   |   +---css
+        |   |   |       style.css
+        |   |   |
+        |   |   \---js
+        |   |           billing-autocomplete.js
+        |   |
+        |   \---templates
+        |       |   index.html
+        |       |
+        |       +---pages
+        |       |       add_medicine.html
+        |       |       billing_list.html
+        |       |       billing_new.html
+        |       |       billing_view.html
+        |       |       dashboard.html
+        |       |       med_edit.html
+        |       |       show_medicine.html
+        |       |
+        |       \---user_auth
+        |               index.html
+        |               user_login.html
+        |               user_signup.html
+        |
+        +---generated-sources
+        |   \---annotations
+        +---generated-test-sources
+        |   \---test-annotations
+        +---maven-status
+        |   \---maven-compiler-plugin
+        |       +---compile
+        |       |   \---default-compile
+        |       |           createdFiles.lst
+        |       |           inputFiles.lst
+        |       |
+        |       \---testCompile
+        |           \---default-testCompile
+        |                   createdFiles.lst
+        |                   inputFiles.lst
+        |
+        +---surefire-reports
+        |       2026-03-05T23-32-50_562.dumpstream
+        |       2026-03-05T23-38-02_507.dumpstream
+        |       2026-03-05T23-47-08_673.dumpstream
+        |       com.myspringboot.SpringBootApp.SpringBootAppApplicationTests.txt
+        |       TEST-com.myspringboot.SpringBootApp.SpringBootAppApplicationTests.xml
+        |
+        \---test-classes
+            \---com
+                \---myspringboot
+                    \---SpringBootApp
+                            SpringBootAppApplicationTests.class
+
 ```
 
 ---
