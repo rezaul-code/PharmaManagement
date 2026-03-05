@@ -29,7 +29,7 @@
   </nav>
   <div class="sidebar-footer">
     <div class="sidebar-user">
-      <div class="avatar">A</div>
+      <div class="avatar" th:text="${session.loggedInUser?.avatarInitial ?: 'A'}">A</div>
       <div class="user-info">
         <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
         <div class="user-role">Pharmacist</div>
@@ -59,7 +59,7 @@
         </div>
         <div class="card-body">
 
-          <form th:action="@{/medicine/add}" method="post"
+          <form th:action="@{/add_medicine}" method="post"
                 th:object="${medicine}">
 
             <!-- Row 1: Name + Type -->

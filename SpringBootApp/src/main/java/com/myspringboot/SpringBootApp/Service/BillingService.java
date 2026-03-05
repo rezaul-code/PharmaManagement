@@ -24,10 +24,11 @@ public class BillingService {
     @Autowired
     private MedicineRepository medicineRepository;
 
-    // ─── Create Bill ─────────────────────────────────────────────────
+    // ─── Create Bill ──────────────────────────────────────────────────
 
     @Transactional
     public Billing createBill(BillingForm form, User createdBy) {
+
         Billing billing = new Billing();
         billing.setBillNumber(generateBillNumber());
         billing.setPatientName(form.getPatientName());
@@ -36,45 +37,80 @@ public class BillingService {
         billing.setCreatedBy(createdBy);
         billing.setStatus(Billing.BillingStatus.PAID);
 
-        for (BillingItemForm itemForm : form.getItems()) {
-            if (itemForm.getMedicineId() == null || itemForm.getQuantity() == null) continue;
+        if (form.getItems() != null) {
+            for (BillingItemForm itemForm : form.getItems()) {
 
-            BillingItem item = new BillingItem();
+                // BUG FIX: Original code skipped rows where medicineId == null.
+                // Now we skip only truly empty rows — where BOTH medicineId
+                // AND medicineName are absent AND quantity is null/zero.
+                boolean hasId   = itemForm.getMedicineId() != null;
+                boolean hasName = itemForm.getMedicineName() != null
+                                  && !itemForm.getMedicineName().isBlank();
+                boolean hasQty  = itemForm.getQuantity() != null
+                                  && itemForm.getQuantity() > 0;
+                boolean hasPrice = itemForm.getUnitPrice() != null
+                                   && itemForm.getUnitPrice().compareTo(BigDecimal.ZERO) > 0;
 
-            // Fetch medicine
-            Optional<Medicine> medOpt = medicineRepository.findById(itemForm.getMedicineId());
-            medOpt.ifPresent(med -> {
-                item.setMedicine(med);
-                item.setMedicineName(med.getName());
-                item.setBatchNo(med.getBatchNo());
+                // Skip the row if there's nothing meaningful in it
+                if ((!hasId && !hasName) || !hasQty || !hasPrice) {
+                    continue;
+                }
 
-                // Deduct stock
-                int newStock = med.getStockQuantity() - itemForm.getQuantity();
-                med.setStockQuantity(Math.max(newStock, 0));
-                medicineRepository.save(med);
-            });
+                BillingItem item = new BillingItem();
 
-            item.setQuantity(itemForm.getQuantity());
-            item.setUnitPrice(itemForm.getUnitPrice());
-            item.setGstPercentage(
-                itemForm.getGstPercentage() != null
-                    ? itemForm.getGstPercentage()
-                    : BigDecimal.ZERO
-            );
+                // ── Populate from Medicine record (if ID given) ───────
+                if (hasId) {
+                    Optional<Medicine> medOpt = medicineRepository.findById(itemForm.getMedicineId());
+                    if (medOpt.isPresent()) {
+                        Medicine med = medOpt.get();
+                        item.setMedicine(med);
 
-            // Calculate line-item totals
-            item.calculateTotals();
+                        // Snapshot name and batch at time of billing
+                        item.setMedicineName(med.getName());
+                        item.setBatchNo(
+                            itemForm.getBatchNo() != null && !itemForm.getBatchNo().isBlank()
+                                ? itemForm.getBatchNo()
+                                : med.getBatchNo()
+                        );
 
-            billing.addItem(item);
+                        // Deduct stock
+                        int newStock = Math.max(0, med.getStockQuantity() - itemForm.getQuantity());
+                        med.setStockQuantity(newStock);
+                        medicineRepository.save(med);
+                    }
+                }
+
+                // ── Fallback: use whatever name was typed ─────────────
+                if (item.getMedicineName() == null) {
+                    item.setMedicineName(itemForm.getMedicineName());
+                }
+                if (item.getBatchNo() == null && itemForm.getBatchNo() != null) {
+                    item.setBatchNo(itemForm.getBatchNo());
+                }
+
+                // ── Set numeric fields ────────────────────────────────
+                item.setQuantity(itemForm.getQuantity());
+                item.setUnitPrice(itemForm.getUnitPrice());
+                item.setGstPercentage(
+                    itemForm.getGstPercentage() != null
+                        ? itemForm.getGstPercentage()
+                        : BigDecimal.ZERO
+                );
+
+                // ── Calculate line totals server-side ─────────────────
+                item.calculateTotals();
+
+                billing.addItem(item);
+            }
         }
 
-        // Recalculate bill-level totals from items (authoritative server-side calc)
+        // Recalculate bill-level totals from items (server-side, authoritative)
         billing.recalculateTotals();
 
         return billingRepository.save(billing);
     }
 
-    // ─── Read ────────────────────────────────────────────────────────
+    // ─── Read ─────────────────────────────────────────────────────────
 
     public List<Billing> getAllBills() {
         return billingRepository.findAllByOrderByCreatedAtDesc();
@@ -84,7 +120,7 @@ public class BillingService {
         return billingRepository.findById(id);
     }
 
-    // ─── Dashboard Stats ─────────────────────────────────────────────
+    // ─── Dashboard Stats ──────────────────────────────────────────────
 
     public long getTotalBillCount() {
         return billingRepository.count();
@@ -97,11 +133,11 @@ public class BillingService {
         return total != null ? total : BigDecimal.ZERO;
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────
+    // ─── Helpers ──────────────────────────────────────────────────────
 
     private String generateBillNumber() {
-        String date   = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long   count  = billingRepository.count() + 1;
+        String date  = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        long   count = billingRepository.count() + 1;
         return String.format("BILL-%s-%04d", date, count);
     }
 }

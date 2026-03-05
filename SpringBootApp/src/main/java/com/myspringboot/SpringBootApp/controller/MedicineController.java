@@ -13,32 +13,39 @@ import org.springframework.web.bind.annotation.*;
 public class MedicineController {
 
     @Autowired
-    private MedicineRepository medicineRepository;  // kept as in your original
+    private MedicineRepository medicineRepository;
 
     @Autowired
-    private MedicineService medicineService;        // added for service-layer calls
+    private MedicineService medicineService;
 
-    // ─── Add Medicine Form (GET) ──────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════
+    //  ADD MEDICINE
+    //  GET  /medicine/add   → show form       (sidebar link)
+    //  POST /medicine/add   → save & redirect (form action in add_medicine.html)
+    //  GET  /add_medicine   → legacy alias
+    //  POST /add_medicine   → legacy alias (your original controller)
+    // ════════════════════════════════════════════════════════════════
 
-    @GetMapping("/medicine/add")
-    public String showAddMedicineForm(Model model) {
+    @GetMapping({"/medicine/add", "/add_medicine"})
+    public String showAddForm(Model model) {
         model.addAttribute("medicine", new Medicine());
         model.addAttribute("types", MedicineType.values());
         return "pages/add_medicine";
     }
 
-    // ─── Save New Medicine (POST) ─────────────────────────────────────
-
-    @PostMapping("/add_medicine")
-    public String saveMedicine(Medicine medicine) {
-        medicineRepository.save(medicine);
-        return "redirect:/show_medicine";
+    @PostMapping({"/medicine/add", "/add_medicine"})
+    public String saveNewMedicine(@ModelAttribute("medicine") Medicine medicine) {
+        medicineService.saveMedicine(medicine);
+        return "redirect:/medicine/show";
     }
 
-    // ─── Show / Search Medicines (GET) ────────────────────────────────
-    // Matches exactly what is on lines 38–56 of your screenshot.
+    // ════════════════════════════════════════════════════════════════
+    //  SHOW / SEARCH MEDICINES
+    //  GET /medicine/show   → sidebar link, show_medicine.html hrefs
+    //  GET /show_medicine   → legacy alias (your original controller)
+    // ════════════════════════════════════════════════════════════════
 
-    @GetMapping("/show_medicine")
+    @GetMapping({"/medicine/show", "/show_medicine"})
     public String showMedicines(
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) String name,
@@ -46,76 +53,67 @@ public class MedicineController {
             @RequestParam(required = false) MedicineType type,
             Model model) {
 
-        // searchMedicines() — now resolved in MedicineRepository via @Query
         model.addAttribute("medicines",
             medicineRepository.searchMedicines(id, name, description, type));
-
-        model.addAttribute("types", MedicineType.values());
-
-        // Keep the search values in form after searching
+        model.addAttribute("types",             MedicineType.values());
         model.addAttribute("searchId",          id);
         model.addAttribute("searchName",        name);
         model.addAttribute("searchDescription", description);
         model.addAttribute("searchType",        type);
-
         return "pages/show_medicine";
     }
 
-    // ─── Edit Medicine Form (GET) ─────────────────────────────────────
-    // Matches lines 58–63 of your screenshot.
-
-    @GetMapping("/med_edit")
-    public String editMedicine(@RequestParam("id") Long id, Model model) {
-        // getMedicineById() — now resolved in MedicineService
-        Medicine medicine = medicineService.getMedicineById(id);
-        model.addAttribute("medicine", medicine);
-        return "pages/med_edit";   // thymeleaf page inside /pages/
-    }
-
-    // ─── Update Medicine (POST) ───────────────────────────────────────
-    // Matches lines 65–68 of your screenshot.
-
-    @PostMapping("/med_edit")
-    public String updateMedicine(@ModelAttribute("medicine") Medicine medicine) {
-        medicineService.saveMedicine(medicine); // update existing medicine
-        return "redirect:/show_medicine";
-    }
-
-    // ─── Delete Medicine (GET) ────────────────────────────────────────
-    // Matches lines 70–74 of your screenshot.
-
-    @GetMapping("/med_delete")
-    public String deleteMedicine(@RequestParam("id") Long id) {
-        medicineService.deleteMedicine(id);     // deleteMedicine() — now resolved
-        return "redirect:/show_medicine";
-    }
-
-    // ─── Also support /medicine/* URL variants (used in sidebar links) ─
-
-    @GetMapping("/medicine/show")
-    public String showMedicinesAlt(
-            @RequestParam(required = false) Long id,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) MedicineType type,
-            Model model) {
-        return showMedicines(id, name, description, type, model);
-    }
+    // ════════════════════════════════════════════════════════════════
+    //  EDIT MEDICINE
+    //  GET  /medicine/edit/{id}   → show edit form  (show_medicine.html href)
+    //  POST /medicine/edit/{id}   → update          (med_edit.html form action)
+    //  GET  /med_edit?id=X        → legacy alias
+    //  POST /med_edit             → legacy alias
+    // ════════════════════════════════════════════════════════════════
 
     @GetMapping("/medicine/edit/{id}")
-    public String editMedicineAlt(@PathVariable Long id, Model model) {
-        return editMedicine(id, model);
+    public String showEditForm(@PathVariable Long id, Model model) {
+        model.addAttribute("medicine", medicineService.getMedicineById(id));
+        model.addAttribute("types", MedicineType.values());
+        return "pages/med_edit";
+    }
+
+    // Legacy: GET /med_edit?id=X
+    @GetMapping("/med_edit")
+    public String showEditFormLegacy(@RequestParam("id") Long id, Model model) {
+        return showEditForm(id, model);
     }
 
     @PostMapping("/medicine/edit/{id}")
-    public String updateMedicineAlt(@PathVariable Long id,
-                                    @ModelAttribute("medicine") Medicine medicine) {
+    public String updateMedicine(@PathVariable Long id,
+                                 @ModelAttribute("medicine") Medicine medicine) {
         medicine.setId(id);
-        return updateMedicine(medicine);
+        medicineService.saveMedicine(medicine);
+        return "redirect:/medicine/show";
     }
 
+    // Legacy: POST /med_edit
+    @PostMapping("/med_edit")
+    public String updateMedicineLegacy(@ModelAttribute("medicine") Medicine medicine) {
+        medicineService.saveMedicine(medicine);
+        return "redirect:/medicine/show";
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  DELETE MEDICINE
+    //  GET /medicine/delete/{id}  → show_medicine.html href
+    //  GET /med_delete?id=X       → legacy alias
+    // ════════════════════════════════════════════════════════════════
+
     @GetMapping("/medicine/delete/{id}")
-    public String deleteMedicineAlt(@PathVariable Long id) {
+    public String deleteMedicine(@PathVariable Long id) {
+        medicineService.deleteMedicine(id);
+        return "redirect:/medicine/show";
+    }
+
+    // Legacy: GET /med_delete?id=X
+    @GetMapping("/med_delete")
+    public String deleteMedicineLegacy(@RequestParam("id") Long id) {
         return deleteMedicine(id);
     }
 }

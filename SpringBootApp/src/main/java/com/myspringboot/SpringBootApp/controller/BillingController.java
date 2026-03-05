@@ -4,7 +4,6 @@ import com.myspringboot.SpringBootApp.Service.BillingService;
 import com.myspringboot.SpringBootApp.Service.MedicineService;
 import com.myspringboot.SpringBootApp.dto.BillingForm;
 import com.myspringboot.SpringBootApp.model.Billing;
-import com.myspringboot.SpringBootApp.model.BillingItemForm;
 import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.model.User;
 import jakarta.servlet.http.HttpSession;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,14 +30,11 @@ public class BillingController {
 
     @GetMapping("/new")
     public String newBillForm(Model model) {
-        BillingForm form = new BillingForm();
-        // Pre-populate with one empty row
-        List<BillingItemForm> items = new ArrayList<>();
-        items.add(new BillingItemForm());
-        form.setItems(items);
-
-        model.addAttribute("billingForm", form);
-        model.addAttribute("medicines", medicineService.getAll());
+        // BUG FIX: Do NOT pre-add a BillingItemForm here.
+        // The JS addItemRow() on DOMContentLoaded adds the first row.
+        // Pre-adding here caused a blank item to always be submitted,
+        // which made BillingService skip all items (medicineId == null).
+        model.addAttribute("billingForm", new BillingForm());
         return "pages/billing_new";
     }
 
@@ -59,7 +54,6 @@ public class BillingController {
         } catch (Exception e) {
             model.addAttribute("error", "Failed to create bill: " + e.getMessage());
             model.addAttribute("billingForm", form);
-            model.addAttribute("medicines", medicineService.getAll());
             return "pages/billing_new";
         }
     }

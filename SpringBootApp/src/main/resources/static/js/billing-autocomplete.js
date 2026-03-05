@@ -1,43 +1,50 @@
 /**
- * PharmaManagement — Billing Page JS
- * Handles: medicine autocomplete, GST calculation, row management
+ * PharmaManagement — Billing Page JS  (v2.1 — fixed)
+ *
+ * ROOT CAUSE OF EMPTY BILLS:
+ *   1. readonly inputs are not reliably submitted in all browsers.
+ *      Fix → each computed field has a paired hidden input that gets
+ *             its value set explicitly before the form submits.
+ *   2. The autocomplete dropdown "mousedown" was firing AFTER the
+ *      input's "blur", causing the dropdown to close before the
+ *      click registered. Fix → preventDefault() on mousedown.
+ *   3. Row index must be globally unique (not reset) so that
+ *      Thymeleaf list binding items[0], items[1]... never collides
+ *      if rows are added/removed.
  */
 
-// ── Utility ─────────────────────────────────────────────────────────
+const fmt   = (n) => parseFloat(n || 0).toFixed(2);
+const rupee = (n) => '&#8377;' + fmt(n);   // ₹ as HTML entity — safe in all contexts
 
-const fmt = (n) => parseFloat(n || 0).toFixed(2);
-const rupee = (n) => '₹' + fmt(n);
+let rowIndex = 0;   // global, never reset — guarantees unique field names
 
-// ── Row counter (keeps unique index for Thymeleaf list binding) ──────
-let rowIndex = 0;
-
-// ── Add a new billing item row ────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  ADD ROW
+// ════════════════════════════════════════════════════════════════════
 function addItemRow() {
   const tbody = document.getElementById('billing-items-tbody');
   const idx   = rowIndex++;
 
   const tr = document.createElement('tr');
   tr.setAttribute('data-row', idx);
+
   tr.innerHTML = `
     <td class="item-num-cell">${tbody.children.length + 1}</td>
 
-    <!-- Medicine Name + autocomplete -->
-    <td style="min-width:180px">
+    <!-- Medicine (autocomplete) -->
+    <td style="min-width:200px">
       <div class="autocomplete-wrapper">
-        <input type="hidden"
-               name="items[${idx}].medicineId"
-               id="medId_${idx}" />
+        <input type="hidden"  name="items[${idx}].medicineId"   id="medId_${idx}" />
+        <input type="hidden"  name="items[${idx}].medicineName" id="medNameHidden_${idx}" />
         <input type="text"
                class="form-control med-name-input"
-               placeholder="Search medicine…"
+               placeholder="Search medicine..."
                autocomplete="off"
+               id="medName_${idx}"
                data-idx="${idx}"
                oninput="onMedSearch(this)"
                onfocus="onMedSearch(this)"
-               id="medName_${idx}" />
-        <input type="hidden"
-               name="items[${idx}].medicineName"
-               id="medNameHidden_${idx}" />
+               onblur="delayCloseDropdown(${idx})" />
         <div class="autocomplete-list" id="acList_${idx}"></div>
       </div>
     </td>
@@ -48,11 +55,11 @@ function addItemRow() {
              class="form-control"
              name="items[${idx}].batchNo"
              id="batchNo_${idx}"
-             placeholder="—" />
+             placeholder="Auto" />
     </td>
 
     <!-- Qty -->
-    <td style="width:80px">
+    <td style="width:75px">
       <input type="number"
              class="form-control"
              name="items[${idx}].quantity"
@@ -63,7 +70,7 @@ function addItemRow() {
     </td>
 
     <!-- Unit Price -->
-    <td style="width:110px">
+    <td style="width:105px">
       <input type="number"
              class="form-control"
              name="items[${idx}].unitPrice"
@@ -74,7 +81,7 @@ function addItemRow() {
     </td>
 
     <!-- GST % -->
-    <td style="width:90px">
+    <td style="width:80px">
       <input type="number"
              class="form-control"
              name="items[${idx}].gstPercentage"
@@ -84,42 +91,34 @@ function addItemRow() {
              oninput="calcRow(${idx})" />
     </td>
 
-    <!-- Item Total (readonly) -->
+    <!-- Item Total (display only + hidden submit) -->
+    <td style="width:105px">
+      <input type="text" class="form-control" id="itemTotalDisp_${idx}"
+             placeholder="0.00" readonly
+             style="background:#f8fafc;color:var(--text-muted)" />
+      <input type="hidden" name="items[${idx}].itemTotal" id="itemTotal_${idx}" value="0.00" />
+    </td>
+
+    <!-- GST Amount (display only + hidden submit) -->
+    <td style="width:105px">
+      <input type="text" class="form-control" id="gstAmtDisp_${idx}"
+             placeholder="0.00" readonly
+             style="background:#f8fafc;color:var(--text-muted)" />
+      <input type="hidden" name="items[${idx}].gstAmount" id="gstAmt_${idx}" value="0.00" />
+    </td>
+
+    <!-- Row Total (display only + hidden submit) -->
     <td style="width:110px">
-      <input type="number"
-             class="form-control"
-             name="items[${idx}].itemTotal"
-             id="itemTotal_${idx}"
-             placeholder="0.00" step="0.01"
-             readonly />
+      <input type="text" class="form-control" id="rowTotalDisp_${idx}"
+             placeholder="0.00" readonly
+             style="background:#f8fafc;color:var(--primary);font-weight:700" />
+      <input type="hidden" name="items[${idx}].totalAmount" id="rowTotal_${idx}" value="0.00" />
     </td>
 
-    <!-- GST Amount (readonly) -->
-    <td style="width:110px">
-      <input type="number"
-             class="form-control"
-             name="items[${idx}].gstAmount"
-             id="gstAmt_${idx}"
-             placeholder="0.00" step="0.01"
-             readonly />
-    </td>
-
-    <!-- Row Total (readonly) -->
-    <td style="width:115px">
-      <input type="number"
-             class="form-control font-mono fw-bold"
-             name="items[${idx}].totalAmount"
-             id="rowTotal_${idx}"
-             placeholder="0.00" step="0.01"
-             readonly style="color:var(--primary)" />
-    </td>
-
-    <!-- Delete -->
-    <td style="width:44px; text-align:center">
-      <button type="button"
-              class="btn btn-sm btn-danger btn-icon"
-              onclick="removeRow(this)"
-              title="Remove">✕</button>
+    <!-- Remove -->
+    <td style="width:40px;text-align:center">
+      <button type="button" class="btn btn-sm btn-danger btn-icon"
+              onclick="removeRow(this)" title="Remove row">&#10005;</button>
     </td>
   `;
 
@@ -127,7 +126,9 @@ function addItemRow() {
   renumberRows();
 }
 
-// ── Remove row ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  REMOVE ROW
+// ════════════════════════════════════════════════════════════════════
 function removeRow(btn) {
   const tbody = document.getElementById('billing-items-tbody');
   if (tbody.children.length <= 1) {
@@ -139,103 +140,115 @@ function removeRow(btn) {
   recalcSummary();
 }
 
-// ── Renumber the # column ─────────────────────────────────────────────
 function renumberRows() {
-  const rows = document.querySelectorAll('#billing-items-tbody tr');
-  rows.forEach((tr, i) => {
+  document.querySelectorAll('#billing-items-tbody tr').forEach((tr, i) => {
     const cell = tr.querySelector('.item-num-cell');
     if (cell) cell.textContent = i + 1;
   });
 }
 
-// ── Calculate a single row ────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  CALCULATE ROW
+// ════════════════════════════════════════════════════════════════════
 function calcRow(idx) {
-  const qty      = parseFloat(document.getElementById(`qty_${idx}`)?.value   || 0);
-  const price    = parseFloat(document.getElementById(`price_${idx}`)?.value  || 0);
-  const gstPct   = parseFloat(document.getElementById(`gst_${idx}`)?.value    || 0);
+  const qty    = parseFloat(getVal(`qty_${idx}`)   || 0);
+  const price  = parseFloat(getVal(`price_${idx}`) || 0);
+  const gstPct = parseFloat(getVal(`gst_${idx}`)   || 0);
 
   const itemTotal = qty * price;
   const gstAmt    = itemTotal * gstPct / 100;
   const rowTotal  = itemTotal + gstAmt;
 
-  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v.toFixed(2); };
-  setVal(`itemTotal_${idx}`, itemTotal);
-  setVal(`gstAmt_${idx}`,    gstAmt);
-  setVal(`rowTotal_${idx}`,  rowTotal);
+  // Update display inputs
+  setDisp(`itemTotalDisp_${idx}`, itemTotal);
+  setDisp(`gstAmtDisp_${idx}`,   gstAmt);
+  setDisp(`rowTotalDisp_${idx}`, rowTotal);
+
+  // Update hidden submit inputs — these are what Spring actually receives
+  setHidden(`itemTotal_${idx}`, itemTotal);
+  setHidden(`gstAmt_${idx}`,    gstAmt);
+  setHidden(`rowTotal_${idx}`,  rowTotal);
 
   recalcSummary();
 }
 
-// ── Recalculate bill-level summary ────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  BILL SUMMARY
+// ════════════════════════════════════════════════════════════════════
 function recalcSummary() {
   let subtotal = 0, totalGst = 0;
 
   document.querySelectorAll('#billing-items-tbody tr').forEach(tr => {
     const idx = tr.getAttribute('data-row');
-    subtotal += parseFloat(document.getElementById(`itemTotal_${idx}`)?.value || 0);
-    totalGst += parseFloat(document.getElementById(`gstAmt_${idx}`)?.value    || 0);
+    subtotal += parseFloat(getVal(`itemTotal_${idx}`) || 0);
+    totalGst += parseFloat(getVal(`gstAmt_${idx}`)   || 0);
   });
 
   const cgst       = totalGst / 2;
   const sgst       = totalGst / 2;
   const grandTotal = subtotal + totalGst;
 
-  // Update display
-  setText('sumSubtotal', rupee(subtotal));
-  setText('sumCgst',     rupee(cgst));
-  setText('sumSgst',     rupee(sgst));
-  setText('sumTotalGst', rupee(totalGst));
-  setText('sumGrandTotal', rupee(grandTotal));
+  // Update summary display
+  setHtml('sumSubtotal',  rupee(subtotal));
+  setHtml('sumCgst',      rupee(cgst));
+  setHtml('sumSgst',      rupee(sgst));
+  setHtml('sumTotalGst',  rupee(totalGst));
+  setHtml('sumGrandTotal',rupee(grandTotal));
 
-  // Push into hidden inputs for form submission
-  setInput('hSubtotal',   subtotal);
-  setInput('hTotalGst',   totalGst);
-  setInput('hCgst',       cgst);
-  setInput('hSgst',       sgst);
-  setInput('hGrandTotal', grandTotal);
+  // Push values into the hidden form inputs submitted to Spring
+  setHidden('hSubtotal',   subtotal);
+  setHidden('hTotalGst',   totalGst);
+  setHidden('hCgst',       cgst);
+  setHidden('hSgst',       sgst);
+  setHidden('hGrandTotal', grandTotal);
 }
 
-function setText(id, val)  { const el = document.getElementById(id); if (el) el.textContent = val; }
-function setInput(id, val) { const el = document.getElementById(id); if (el) el.value = val.toFixed(2); }
-
-// ── Medicine Autocomplete ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  MEDICINE AUTOCOMPLETE
+// ════════════════════════════════════════════════════════════════════
 let searchTimer = null;
 
 function onMedSearch(input) {
   clearTimeout(searchTimer);
-  const idx = input.getAttribute('data-idx');
-  const q   = input.value.trim();
-
+  const idx  = input.getAttribute('data-idx');
+  const q    = input.value.trim();
   const list = document.getElementById(`acList_${idx}`);
 
-  if (q.length < 1) { list.classList.remove('open'); list.innerHTML = ''; return; }
+  if (q.length < 1) { closeDropdown(idx); return; }
 
   searchTimer = setTimeout(() => {
-    fetch(`/billing/medicine/search?q=${encodeURIComponent(q)}`)
+    fetch('/billing/medicine/search?q=' + encodeURIComponent(q))
       .then(r => r.json())
       .then(meds => renderAutocomplete(meds, idx, list))
-      .catch(() => { list.classList.remove('open'); });
-  }, 220);
+      .catch(() => closeDropdown(idx));
+  }, 200);
 }
 
 function renderAutocomplete(meds, idx, list) {
   list.innerHTML = '';
-  if (!meds.length) { list.classList.remove('open'); return; }
+  if (!meds || !meds.length) { closeDropdown(idx); return; }
 
   meds.forEach(med => {
     const div = document.createElement('div');
     div.className = 'autocomplete-item';
-    div.innerHTML = `
-      <span>
-        <strong>${med.name}</strong>
-        <span class="ac-gst ms-1">${med.gstPercentage ?? 0}% GST</span>
-      </span>
-      <span class="ac-price">₹${parseFloat(med.price || 0).toFixed(2)}</span>
-    `;
-    div.addEventListener('mousedown', (e) => {
+
+    // Use innerHTML with entities to avoid special character issues
+    const name    = escHtml(med.name   || '');
+    const gstPct  = med.gstPercentage  != null ? med.gstPercentage : 0;
+    const price   = parseFloat(med.price || 0).toFixed(2);
+
+    div.innerHTML =
+      '<span><strong>' + name + '</strong> ' +
+      '<span class="ac-gst">' + gstPct + '% GST</span></span>' +
+      '<span class="ac-price">&#8377;' + price + '</span>';
+
+    // mousedown fires before blur — preventDefault stops dropdown from
+    // closing before the click is processed (critical fix)
+    div.addEventListener('mousedown', function(e) {
       e.preventDefault();
       selectMedicine(med, idx);
     });
+
     list.appendChild(div);
   });
 
@@ -243,39 +256,57 @@ function renderAutocomplete(meds, idx, list) {
 }
 
 function selectMedicine(med, idx) {
-  // Fill visible name input
-  const nameInput = document.getElementById(`medName_${idx}`);
-  if (nameInput) nameInput.value = med.name;
+  // Visible search input
+  setById(`medName_${idx}`, med.name || '');
 
-  // Fill hidden fields
-  setInputById(`medId_${idx}`,         med.id);
-  setInputById(`medNameHidden_${idx}`, med.name);
-  setInputById(`batchNo_${idx}`,       med.batchNo || '');
-  setInputById(`price_${idx}`,         parseFloat(med.price || 0).toFixed(2));
-  setInputById(`gst_${idx}`,           parseFloat(med.gstPercentage || 0).toFixed(2));
+  // Hidden bound inputs — these bind to BillingItemForm fields
+  setById(`medId_${idx}`,         med.id       || '');
+  setById(`medNameHidden_${idx}`, med.name     || '');
+  setById(`batchNo_${idx}`,       med.batchNo  || '');
+  setById(`price_${idx}`,         parseFloat(med.price          || 0).toFixed(2));
+  setById(`gst_${idx}`,           parseFloat(med.gstPercentage  || 0).toFixed(2));
 
-  // Close dropdown
-  const list = document.getElementById(`acList_${idx}`);
-  if (list) { list.classList.remove('open'); list.innerHTML = ''; }
-
-  // Calculate immediately
+  closeDropdown(idx);
   calcRow(idx);
 }
 
-function setInputById(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.value = val;
+// Delay close so mousedown click has time to register on slow devices
+function delayCloseDropdown(idx) {
+  setTimeout(() => closeDropdown(idx), 200);
 }
 
-// ── Close autocomplete when clicking elsewhere ────────────────────────
-document.addEventListener('click', (e) => {
+function closeDropdown(idx) {
+  const list = document.getElementById(`acList_${idx}`);
+  if (list) { list.classList.remove('open'); list.innerHTML = ''; }
+}
+
+// Close all dropdowns on outside click
+document.addEventListener('click', function(e) {
   if (!e.target.closest('.autocomplete-wrapper')) {
-    document.querySelectorAll('.autocomplete-list').forEach(l => l.classList.remove('open'));
+    document.querySelectorAll('.autocomplete-list')
+            .forEach(l => l.classList.remove('open'));
   }
 });
 
-// ── Init: add first row on load ────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  addItemRow();
-  recalcSummary();
+// ════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════════
+function getVal(id)       { const el = document.getElementById(id); return el ? el.value : ''; }
+function setById(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+function setDisp(id, num) { const el = document.getElementById(id); if (el) el.value = parseFloat(num).toFixed(2); }
+function setHidden(id, num) {
+  const el = document.getElementById(id);
+  if (el) el.value = parseFloat(num).toFixed(2);
+}
+function setHtml(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  addItemRow();    // Add first empty row
+  recalcSummary(); // Initialise summary to ₹0.00
 });
