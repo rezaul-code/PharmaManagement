@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Objects;
+
 @Controller
 public class LoginController {
 
     @Autowired
     private UserRepository userRepository;
-
-    // ─── Show login form ──────────────────────────────────────────────
 
     @GetMapping("/login")
     public String showLogin(HttpSession session) {
@@ -26,22 +26,19 @@ public class LoginController {
         return "user_auth/user_login";
     }
 
-    // ─── Handle login submission ──────────────────────────────────────
-
     @PostMapping("/login")
     public String handleLogin(
-            @RequestParam("identifier") String identifier,  // email OR phone
-            @RequestParam("password")   String password,
+            @RequestParam("identifier") String identifier,
+            @RequestParam("password") String password,
             HttpSession session,
             Model model) {
 
-        // Try email first, then phone
         User user = userRepository.findByEmail(identifier);
         if (user == null) {
             user = userRepository.findByPhone(identifier);
         }
 
-        if (user == null || !user.getPassword().equals(password)) {
+        if (user == null || !Objects.equals(user.getPassword(), password)) {
             model.addAttribute("error", "Invalid email / phone or password. Please try again.");
             return "user_auth/user_login";
         }
@@ -51,15 +48,11 @@ public class LoginController {
         return "redirect:/dashboard";
     }
 
-    // ─── Logout ──────────────────────────────────────────────────────
-
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         session.invalidate();
         return "redirect:/login";
     }
-
-    // ─── Root redirect ────────────────────────────────────────────────
 
     @GetMapping("/")
     public String root(HttpSession session) {

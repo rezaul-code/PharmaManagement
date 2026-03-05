@@ -5,9 +5,15 @@ import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.model.MedicineType;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class MedicineController {
@@ -17,14 +23,6 @@ public class MedicineController {
 
     @Autowired
     private MedicineService medicineService;
-
-    // ════════════════════════════════════════════════════════════════
-    //  ADD MEDICINE
-    //  GET  /medicine/add   → show form       (sidebar link)
-    //  POST /medicine/add   → save & redirect (form action in add_medicine.html)
-    //  GET  /add_medicine   → legacy alias
-    //  POST /add_medicine   → legacy alias (your original controller)
-    // ════════════════════════════════════════════════════════════════
 
     @GetMapping({"/medicine/add", "/add_medicine"})
     public String showAddForm(Model model) {
@@ -39,12 +37,6 @@ public class MedicineController {
         return "redirect:/medicine/show";
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  SHOW / SEARCH MEDICINES
-    //  GET /medicine/show   → sidebar link, show_medicine.html hrefs
-    //  GET /show_medicine   → legacy alias (your original controller)
-    // ════════════════════════════════════════════════════════════════
-
     @GetMapping({"/medicine/show", "/show_medicine"})
     public String showMedicines(
             @RequestParam(required = false) Long id,
@@ -53,67 +45,70 @@ public class MedicineController {
             @RequestParam(required = false) MedicineType type,
             Model model) {
 
-        model.addAttribute("medicines",
-            medicineRepository.searchMedicines(id, name, description, type));
-        model.addAttribute("types",             MedicineType.values());
-        model.addAttribute("searchId",          id);
-        model.addAttribute("searchName",        name);
+        model.addAttribute("medicines", medicineRepository.searchMedicines(id, name, description, type));
+        model.addAttribute("types", MedicineType.values());
+        model.addAttribute("searchId", id);
+        model.addAttribute("searchName", name);
         model.addAttribute("searchDescription", description);
-        model.addAttribute("searchType",        type);
+        model.addAttribute("searchType", type);
         return "pages/show_medicine";
     }
 
-    // ════════════════════════════════════════════════════════════════
-    //  EDIT MEDICINE
-    //  GET  /medicine/edit/{id}   → show edit form  (show_medicine.html href)
-    //  POST /medicine/edit/{id}   → update          (med_edit.html form action)
-    //  GET  /med_edit?id=X        → legacy alias
-    //  POST /med_edit             → legacy alias
-    // ════════════════════════════════════════════════════════════════
-
     @GetMapping("/medicine/edit/{id}")
-    public String showEditForm(@PathVariable Long id, Model model) {
-        model.addAttribute("medicine", medicineService.getMedicineById(id));
-        model.addAttribute("types", MedicineType.values());
-        return "pages/med_edit";
+    public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("medicine", medicineService.getMedicineById(id));
+            model.addAttribute("types", MedicineType.values());
+            return "pages/med_edit";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/medicine/show";
+        }
     }
 
-    // Legacy: GET /med_edit?id=X
     @GetMapping("/med_edit")
-    public String showEditFormLegacy(@RequestParam("id") Long id, Model model) {
-        return showEditForm(id, model);
+    public String showEditFormLegacy(@RequestParam("id") Long id, Model model, RedirectAttributes redirectAttributes) {
+        return showEditForm(id, model, redirectAttributes);
     }
 
     @PostMapping("/medicine/edit/{id}")
     public String updateMedicine(@PathVariable Long id,
-                                 @ModelAttribute("medicine") Medicine medicine) {
+                                 @ModelAttribute("medicine") Medicine medicine,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            medicineService.getMedicineById(id);
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/medicine/show";
+        }
+
         medicine.setId(id);
         medicineService.saveMedicine(medicine);
         return "redirect:/medicine/show";
     }
 
-    // Legacy: POST /med_edit
     @PostMapping("/med_edit")
-    public String updateMedicineLegacy(@ModelAttribute("medicine") Medicine medicine) {
-        medicineService.saveMedicine(medicine);
-        return "redirect:/medicine/show";
+    public String updateMedicineLegacy(@ModelAttribute("medicine") Medicine medicine,
+                                       RedirectAttributes redirectAttributes) {
+        if (medicine.getId() == null) {
+            redirectAttributes.addFlashAttribute("error", "Medicine id is required for update.");
+            return "redirect:/medicine/show";
+        }
+        return updateMedicine(medicine.getId(), medicine, redirectAttributes);
     }
-
-    // ════════════════════════════════════════════════════════════════
-    //  DELETE MEDICINE
-    //  GET /medicine/delete/{id}  → show_medicine.html href
-    //  GET /med_delete?id=X       → legacy alias
-    // ════════════════════════════════════════════════════════════════
 
     @GetMapping("/medicine/delete/{id}")
-    public String deleteMedicine(@PathVariable Long id) {
-        medicineService.deleteMedicine(id);
+    public String deleteMedicine(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            medicineService.deleteMedicine(id);
+        } catch (EmptyResultDataAccessException ex) {
+            redirectAttributes.addFlashAttribute("error", "Medicine not found with id: " + id);
+        }
         return "redirect:/medicine/show";
     }
 
-    // Legacy: GET /med_delete?id=X
     @GetMapping("/med_delete")
-    public String deleteMedicineLegacy(@RequestParam("id") Long id) {
-        return deleteMedicine(id);
+    public String deleteMedicineLegacy(@RequestParam("id") Long id, RedirectAttributes redirectAttributes) {
+        return deleteMedicine(id, redirectAttributes);
     }
 }
