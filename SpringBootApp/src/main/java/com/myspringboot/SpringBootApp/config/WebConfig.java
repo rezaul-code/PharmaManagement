@@ -12,47 +12,41 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private AuthInterceptor authInterceptor;
 
+    @Autowired
+    private TenantInterceptor tenantInterceptor;  // ← NEW
+
     // ── Interceptor registration ──────────────────────────────────────
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+
+        // 1️⃣  Auth guard — unchanged
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                    // Landing + auth pages
-                    "/",
-                    "/index",
-                    "/login",
-                    "/login/**",
-                    "/signup",
-                    "/signup/**",
+                    "/", "/index",
+                    "/login", "/login/**",
+                    "/signup", "/signup/**",
+                    "/css/**", "/js/**", "/images/**", "/fonts/**",
+                    "/favicon.ico", "/error", "/error/**"
+                )
+                .order(1);
 
-                    // Static resources
-                    // NOTE: Spring Boot auto-serves /static/** but the
-                    // interceptor still fires unless explicitly excluded.
-                    "/css/**",
-                    "/js/**",
-                    "/images/**",
-                    "/fonts/**",
-
-                    // Browser / Spring internals
-                    "/favicon.ico",
-                    "/error",
-                    "/error/**"
-                );
+        // 2️⃣  Tenant context loader — runs on EVERY request (including public
+        //     ones) so TenantContext is always initialised and safely cleared.
+        //     It is harmless on unauthenticated requests because it falls back
+        //     to DEFAULT_PHARMACY_ID and gets cleared in afterCompletion().
+        registry.addInterceptor(tenantInterceptor)
+                .addPathPatterns("/**")
+                .order(2);
     }
 
     // ── Static resource handler ───────────────────────────────────────
-    // Explicitly maps /css/**, /js/** etc. to src/main/resources/static/
-    // This ensures DevTools hot-reload and the interceptor exclusions
-    // both resolve to the same physical paths.
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**")
                 .addResourceLocations("classpath:/static/css/");
-
         registry.addResourceHandler("/js/**")
                 .addResourceLocations("classpath:/static/js/");
-
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/static/images/");
     }

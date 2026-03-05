@@ -15,84 +15,79 @@ public class MedicineService {
     @Autowired
     private MedicineRepository medicineRepository;
 
-    // ─── CRUD ─────────────────────────────────────────────────────────
+    @Autowired
+    private TenantPharmacyService tenantPharmacyService;
 
-    /**
-     * saveMedicine() — resolves medicineService.saveMedicine(medicine)
-     * in MedicineController (add + update).
-     */
     public Medicine saveMedicine(Medicine medicine) {
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+        if (medicine.getId() != null) {
+            medicineRepository.findByIdAndPharmacyId(medicine.getId(), pharmacyId)
+                    .orElseThrow(() -> new IllegalArgumentException("Medicine not found with id: " + medicine.getId()));
+        }
+
+        medicine.setPharmacy(tenantPharmacyService.getCurrentPharmacy());
         return medicineRepository.save(medicine);
     }
 
-    /** Alias kept for BillingService which calls save() internally. */
     public Medicine save(Medicine medicine) {
         return saveMedicine(medicine);
     }
 
     public List<Medicine> getAll() {
-        return medicineRepository.findAll();
+        return medicineRepository.findByPharmacyId(tenantPharmacyService.getCurrentPharmacyId());
     }
 
-    /**
-     * getMedicineById() — resolves medicineService.getMedicineById(id)
-     * in MedicineController (/med_edit GET).
-     *
-     * Returns the Medicine or throws a clean IllegalArgumentException
-     * so the controller never has to handle an empty Optional.
-     */
     public Medicine getMedicineById(Long id) {
-        return medicineRepository.findById(id)
-                .orElseThrow(() ->
-                    new IllegalArgumentException("Medicine not found with id: " + id));
+        return medicineRepository.findByIdAndPharmacyId(id, tenantPharmacyService.getCurrentPharmacyId())
+                .orElseThrow(() -> new IllegalArgumentException("Medicine not found with id: " + id));
     }
 
-    /** Optional-returning variant used by BillingController. */
     public Optional<Medicine> getById(Long id) {
-        return medicineRepository.findById(id);
+        return medicineRepository.findByIdAndPharmacyId(id, tenantPharmacyService.getCurrentPharmacyId());
     }
 
-    /**
-     * deleteMedicine() — resolves medicineService.deleteMedicine(id)
-     * in MedicineController (/med_delete).
-     */
     public void deleteMedicine(Long id) {
-        medicineRepository.deleteById(id);
+        Medicine medicine = medicineRepository.findByIdAndPharmacyId(id, tenantPharmacyService.getCurrentPharmacyId())
+                .orElseThrow(() -> new IllegalArgumentException("Medicine not found with id: " + id));
+        medicineRepository.delete(medicine);
     }
 
-    /** Alias kept for any existing call sites using deleteById. */
     public void deleteById(Long id) {
         deleteMedicine(id);
     }
 
-    // ─── Multi-field search ───────────────────────────────────────────
-
-    /**
-     * Delegates to MedicineRepository.searchMedicines() —
-     * resolves medicineRepository.searchMedicines(id, name, description, type)
-     * in MedicineController (/show_medicine GET).
-     */
-    public List<Medicine> searchMedicines(Long id, String name,
-                                          String description, MedicineType type) {
-        return medicineRepository.searchMedicines(id, name, description, type);
+    public List<Medicine> searchMedicines(Long id, String name, String description, MedicineType type) {
+        return medicineRepository.searchMedicines(
+                tenantPharmacyService.getCurrentPharmacyId(),
+                id,
+                name,
+                description,
+                type
+        );
     }
 
-    /** Simple name-only search used by billing autocomplete. */
     public List<Medicine> searchByName(String keyword) {
-        return medicineRepository.findByNameContainingIgnoreCase(keyword);
+        return medicineRepository.findByNameContainingIgnoreCaseAndPharmacyId(
+                keyword,
+                tenantPharmacyService.getCurrentPharmacyId()
+        );
     }
-
-    // ─── Dashboard stats ──────────────────────────────────────────────
 
     public long getTotalCount() {
-        return medicineRepository.count();
+        return medicineRepository.countByPharmacyId(tenantPharmacyService.getCurrentPharmacyId());
     }
 
     public long getLowStockCount() {
-        return medicineRepository.countByStockQuantityLessThanEqual(10);
+        return medicineRepository.countByStockQuantityLessThanEqualAndPharmacyId(
+                10,
+                tenantPharmacyService.getCurrentPharmacyId()
+        );
     }
 
     public List<Medicine> getLowStockMedicines() {
-        return medicineRepository.findByStockQuantityLessThanEqual(10);
+        return medicineRepository.findByStockQuantityLessThanEqualAndPharmacyId(
+                10,
+                tenantPharmacyService.getCurrentPharmacyId()
+        );
     }
 }

@@ -1,21 +1,41 @@
 package com.myspringboot.SpringBootApp.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "billings")
+@Table(
+        name = "billings",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_billings_pharmacy_bill_number", columnNames = {"pharmacy_id", "bill_number"})
+        }
+)
 public class Billing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "bill_number", unique = true)
-    private String billNumber;      // e.g. BILL-20240601-0001
+    @Column(name = "bill_number")
+    private String billNumber;
 
     @Column(name = "patient_name")
     private String patientName;
@@ -30,102 +50,170 @@ public class Billing {
     @JoinColumn(name = "user_id")
     private User createdBy;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pharmacy_id")
+    private Pharmacy pharmacy;
+
     @OneToMany(mappedBy = "billing", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BillingItem> items = new ArrayList<>();
 
-    // ── Bill-level totals (computed & stored) ──────────────────────
-
-    // Sum of (unitPrice * qty) for all items — before GST
     @Column(precision = 12, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
 
-    // Total GST across all items
     @Column(name = "total_gst", precision = 12, scale = 2)
     private BigDecimal totalGst = BigDecimal.ZERO;
 
-    // CGST = SGST = totalGst / 2
     @Column(precision = 12, scale = 2)
     private BigDecimal cgst = BigDecimal.ZERO;
 
     @Column(precision = 12, scale = 2)
     private BigDecimal sgst = BigDecimal.ZERO;
 
-    // grandTotal = subtotal + totalGst
     @Column(name = "grand_total", precision = 12, scale = 2)
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private BillingStatus status = BillingStatus.PENDING;
 
-    public enum BillingStatus { PENDING, PAID, CANCELLED }
+    public enum BillingStatus {
+        PENDING, PAID, CANCELLED
+    }
 
-    // ─── Constructors ────────────────────────────────────────────────
-
-    public Billing() {}
-
-    // ─── Helpers ────────────────────────────────────────────────────
+    public Billing() {
+    }
 
     public void addItem(BillingItem item) {
         items.add(item);
         item.setBilling(this);
     }
 
-    /**
-     * Recompute all bill-level totals from line items.
-     * Call this after all items are finalised.
-     */
     public void recalculateTotals() {
-        subtotal   = BigDecimal.ZERO;
-        totalGst   = BigDecimal.ZERO;
+        subtotal = BigDecimal.ZERO;
+        totalGst = BigDecimal.ZERO;
 
         for (BillingItem item : items) {
-            if (item.getItemTotal()  != null) subtotal = subtotal.add(item.getItemTotal());
-            if (item.getGstAmount()  != null) totalGst = totalGst.add(item.getGstAmount());
+            if (item.getItemTotal() != null) {
+                subtotal = subtotal.add(item.getItemTotal());
+            }
+            if (item.getGstAmount() != null) {
+                totalGst = totalGst.add(item.getGstAmount());
+            }
         }
 
-        cgst       = totalGst.divide(BigDecimal.valueOf(2), 2, java.math.RoundingMode.HALF_UP);
-        sgst       = cgst;
+        cgst = totalGst.divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+        sgst = cgst;
         grandTotal = subtotal.add(totalGst);
     }
 
-    // ─── Getters & Setters ───────────────────────────────────────────
+    public Long getId() {
+        return id;
+    }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getBillNumber() { return billNumber; }
-    public void setBillNumber(String billNumber) { this.billNumber = billNumber; }
+    public String getBillNumber() {
+        return billNumber;
+    }
 
-    public String getPatientName() { return patientName; }
-    public void setPatientName(String patientName) { this.patientName = patientName; }
+    public void setBillNumber(String billNumber) {
+        this.billNumber = billNumber;
+    }
 
-    public String getPatientPhone() { return patientPhone; }
-    public void setPatientPhone(String patientPhone) { this.patientPhone = patientPhone; }
+    public String getPatientName() {
+        return patientName;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
+    }
 
-    public User getCreatedBy() { return createdBy; }
-    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+    public String getPatientPhone() {
+        return patientPhone;
+    }
 
-    public List<BillingItem> getItems() { return items; }
-    public void setItems(List<BillingItem> items) { this.items = items; }
+    public void setPatientPhone(String patientPhone) {
+        this.patientPhone = patientPhone;
+    }
 
-    public BigDecimal getSubtotal() { return subtotal; }
-    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
-    public BigDecimal getTotalGst() { return totalGst; }
-    public void setTotalGst(BigDecimal totalGst) { this.totalGst = totalGst; }
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 
-    public BigDecimal getCgst() { return cgst; }
-    public void setCgst(BigDecimal cgst) { this.cgst = cgst; }
+    public User getCreatedBy() {
+        return createdBy;
+    }
 
-    public BigDecimal getSgst() { return sgst; }
-    public void setSgst(BigDecimal sgst) { this.sgst = sgst; }
+    public void setCreatedBy(User createdBy) {
+        this.createdBy = createdBy;
+    }
 
-    public BigDecimal getGrandTotal() { return grandTotal; }
-    public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = grandTotal; }
+    public Pharmacy getPharmacy() {
+        return pharmacy;
+    }
 
-    public BillingStatus getStatus() { return status; }
-    public void setStatus(BillingStatus status) { this.status = status; }
+    public void setPharmacy(Pharmacy pharmacy) {
+        this.pharmacy = pharmacy;
+    }
+
+    public List<BillingItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<BillingItem> items) {
+        this.items = items;
+    }
+
+    public BigDecimal getSubtotal() {
+        return subtotal;
+    }
+
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public BigDecimal getTotalGst() {
+        return totalGst;
+    }
+
+    public void setTotalGst(BigDecimal totalGst) {
+        this.totalGst = totalGst;
+    }
+
+    public BigDecimal getCgst() {
+        return cgst;
+    }
+
+    public void setCgst(BigDecimal cgst) {
+        this.cgst = cgst;
+    }
+
+    public BigDecimal getSgst() {
+        return sgst;
+    }
+
+    public void setSgst(BigDecimal sgst) {
+        this.sgst = sgst;
+    }
+
+    public BigDecimal getGrandTotal() {
+        return grandTotal;
+    }
+
+    public void setGrandTotal(BigDecimal grandTotal) {
+        this.grandTotal = grandTotal;
+    }
+
+    public BillingStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(BillingStatus status) {
+        this.status = status;
+    }
 }

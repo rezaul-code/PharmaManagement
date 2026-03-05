@@ -1,95 +1,226 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - PharmaManagement</title>
-  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sign In — SpringPharma</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --teal-dark:   #0d2d2a;
+            --teal-mid:    #0f3d38;
+            --teal-accent: #1a9e8f;
+            --teal-bright: #22c9b5;
+            --gold:        #f0c040;
+            --text-light:  #e8f5f3;
+            --text-muted:  #7ab8b0;
+            --glass-bg:    rgba(255,255,255,0.06);
+            --glass-border:rgba(255,255,255,0.12);
+        }
+
+        html, body {
+            height: 100%; width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--teal-dark);
+            overflow: hidden;
+        }
+
+        /* ── Background mesh ── */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(26,158,143,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(34,201,181,0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(15,61,56,0.8) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .page {
+            height: 100vh; width: 100vw;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2.2rem 2.4rem;
+            width: 100%; max-width: 420px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Brand ── */
+        .brand {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1.6rem;
+        }
+        .brand-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, var(--teal-accent), var(--teal-bright));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; box-shadow: 0 4px 16px rgba(34,201,181,0.3);
+        }
+        .brand-text h1 {
+            font-family: 'Syne', sans-serif; font-size: 1.2rem;
+            font-weight: 800; color: var(--text-light); line-height: 1.1;
+        }
+        .brand-text p { font-size: 0.72rem; color: var(--text-muted); letter-spacing: 0.08em; }
+
+        /* ── Heading ── */
+        .heading { margin-bottom: 1.4rem; }
+        .heading h2 {
+            font-family: 'Syne', sans-serif; font-size: 1.55rem;
+            font-weight: 700; color: var(--text-light); line-height: 1.2;
+        }
+        .heading p { font-size: 0.82rem; color: var(--text-muted); margin-top: 3px; }
+
+        /* ── Alert ── */
+        .alert {
+            background: rgba(220,60,60,0.15);
+            border: 1px solid rgba(220,60,60,0.35);
+            color: #ff9090; border-radius: 10px;
+            padding: 0.65rem 0.9rem; font-size: 0.82rem;
+            margin-bottom: 1rem;
+        }
+        .alert-success {
+            background: rgba(34,201,181,0.12);
+            border-color: rgba(34,201,181,0.3);
+            color: var(--teal-bright);
+        }
+
+        /* ── Form ── */
+        .field { margin-bottom: 0.9rem; }
+        label {
+            display: block; font-size: 0.72rem; font-weight: 500;
+            letter-spacing: 0.07em; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 5px;
+        }
+        .input-wrap { position: relative; }
+        input[type=text], input[type=email], input[type=password], input[type=tel] {
+            width: 100%; padding: 0.65rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px; color: var(--text-light);
+            font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input::placeholder { color: rgba(122,184,176,0.5); }
+        input:focus {
+            outline: none;
+            border-color: var(--teal-bright);
+            box-shadow: 0 0 0 3px rgba(34,201,181,0.15);
+        }
+        .hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* eye toggle */
+        .eye-btn {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: var(--text-muted);
+            font-size: 1rem; padding: 2px;
+        }
+        .eye-btn:hover { color: var(--teal-bright); }
+
+        /* ── Submit ── */
+        .btn-submit {
+            width: 100%; padding: 0.75rem;
+            background: linear-gradient(135deg, var(--teal-accent), var(--teal-bright));
+            color: #fff; font-family: 'Syne', sans-serif;
+            font-size: 0.95rem; font-weight: 700;
+            border: none; border-radius: 12px; cursor: pointer;
+            margin-top: 0.5rem; letter-spacing: 0.03em;
+            box-shadow: 0 4px 20px rgba(34,201,181,0.25);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(34,201,181,0.4);
+        }
+        .btn-submit:active { transform: translateY(0); }
+
+        /* ── Footer ── */
+        .footer-link {
+            text-align: center; margin-top: 1.1rem;
+            font-size: 0.82rem; color: var(--text-muted);
+        }
+        .footer-link a {
+            color: var(--teal-bright); font-weight: 600;
+            text-decoration: none;
+        }
+        .footer-link a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
+<div class="page">
+  <div class="card">
 
-<div class="auth-page">
-  <div class="auth-card">
-
-    <!-- Logo -->
-    <div class="auth-logo">
-      <div class="logo-icon">&#128138;</div>
-      <div class="logo-title">PharmaManage</div>
-      <div class="logo-sub">Professional Pharmacy System</div>
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon">💊</div>
+      <div class="brand-text">
+        <h1>SpringPharma</h1>
+        <p>MANAGEMENT SYSTEM</p>
+      </div>
     </div>
 
-    <!-- Registration success banner -->
-    <div th:if="${param.registered}" class="alert alert-success">
-      Account created! Please sign in.
+    <!-- Heading -->
+    <div class="heading">
+      <h2>Welcome back</h2>
+      <p>Sign in to your pharmacy dashboard</p>
     </div>
 
-    <!-- Error banner -->
-    <div th:if="${error}" class="alert alert-danger">
-      <span th:text="${error}">Invalid credentials</span>
+    <!-- Error / success -->
+    <div class="alert" th:if="${error}" th:text="${error}"></div>
+    <div class="alert alert-success" th:if="${param.registered}">
+      Registration successful! Please sign in.
+    </div>
+    <div class="alert alert-success" th:if="${param.logout}">
+      You have been signed out.
     </div>
 
-    <!-- Login form -->
     <form th:action="@{/login}" method="post">
 
-      <!-- Email or Phone -->
-      <div class="form-group">
-        <label class="form-label">Email or Phone Number</label>
-        <input type="text"
-               name="identifier"
-               class="form-control"
-               placeholder="you@example.com or +91 98765 43210"
-               required
-               autofocus />
-        <div style="font-size:11.5px;color:var(--text-muted);margin-top:5px">
-          You can sign in with either your registered email or phone number.
+      <div class="field">
+        <label>Email or Phone Number</label>
+        <input type="text" name="identifier"
+               placeholder="you@example.com or 9876543210"
+               autocomplete="username" required/>
+        <div class="hint">Sign in with your registered email or phone.</div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <input type="password" name="password" id="pwdField"
+                 placeholder="Enter your password"
+                 autocomplete="current-password" required/>
+          <button type="button" class="eye-btn" onclick="togglePwd()" title="Show/hide">👁</button>
         </div>
       </div>
 
-      <!-- Password -->
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <div style="position:relative">
-          <input type="password"
-                 name="password"
-                 id="passwordInput"
-                 class="form-control"
-                 placeholder="Enter password"
-                 required
-                 style="padding-right:44px" />
-          <!-- Show / hide toggle -->
-          <button type="button"
-                  onclick="togglePassword()"
-                  style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-                         background:none;border:none;cursor:pointer;font-size:16px;
-                         color:var(--text-muted);padding:0;line-height:1"
-                  title="Show / hide password">
-            &#128065;
-          </button>
-        </div>
-      </div>
-
-      <!-- Submit -->
-      <button type="submit"
-              class="btn btn-primary btn-lg"
-              style="width:100%;justify-content:center;margin-top:8px">
-        Sign In
-      </button>
-
+      <button type="submit" class="btn-submit">Sign In →</button>
     </form>
 
-    <div class="auth-footer-text">
-      Don't have an account? <a th:href="@{/signup}">Sign up</a>
+    <div class="footer-link">
+      Don't have an account? <a th:href="@{/signup}">Sign up free</a>
     </div>
 
   </div>
 </div>
-
 <script>
-  function togglePassword() {
-    var input = document.getElementById('passwordInput');
-    input.type = input.type === 'password' ? 'text' : 'password';
+  function togglePwd() {
+    const f = document.getElementById('pwdField');
+    f.type = f.type === 'password' ? 'text' : 'password';
   }
 </script>
-
 </body>
 </html>

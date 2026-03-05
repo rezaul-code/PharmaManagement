@@ -3,7 +3,6 @@ package com.myspringboot.SpringBootApp.controller;
 import com.myspringboot.SpringBootApp.Service.MedicineService;
 import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.model.MedicineType;
-import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Controller;
@@ -17,9 +16,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class MedicineController {
-
-    @Autowired
-    private MedicineRepository medicineRepository;
 
     @Autowired
     private MedicineService medicineService;
@@ -45,7 +41,8 @@ public class MedicineController {
             @RequestParam(required = false) MedicineType type,
             Model model) {
 
-        model.addAttribute("medicines", medicineRepository.searchMedicines(id, name, description, type));
+        // Example tenant-safe usage: service already filters by current pharmacy.
+        model.addAttribute("medicines", medicineService.searchMedicines(id, name, description, type));
         model.addAttribute("types", MedicineType.values());
         model.addAttribute("searchId", id);
         model.addAttribute("searchName", name);
@@ -101,7 +98,7 @@ public class MedicineController {
     public String deleteMedicine(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             medicineService.deleteMedicine(id);
-        } catch (EmptyResultDataAccessException ex) {
+        } catch (EmptyResultDataAccessException | IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", "Medicine not found with id: " + id);
         }
         return "redirect:/medicine/show";

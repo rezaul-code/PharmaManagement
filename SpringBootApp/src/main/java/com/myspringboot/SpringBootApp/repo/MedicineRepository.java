@@ -8,23 +8,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MedicineRepository extends JpaRepository<Medicine, Long> {
 
-    // ── Autocomplete search (BillingController) ──────────────────────
-    List<Medicine> findByNameContainingIgnoreCase(String name);
+    List<Medicine> findByPharmacyId(Long pharmacyId);
 
-    // ── Advanced multi-field search (MedicineController /show_medicine)
-    /**
-     * Resolves:  medicineRepository.searchMedicines(id, name, description, type)
-     *
-     * Every parameter is optional — pass null to skip that filter.
-     * Works with your existing show_medicine page's @RequestParam filters.
-     */
+    Optional<Medicine> findByIdAndPharmacyId(Long id, Long pharmacyId);
+
+    List<Medicine> findByNameContainingIgnoreCaseAndPharmacyId(String name, Long pharmacyId);
+
     @Query("""
         SELECT m FROM Medicine m
-        WHERE (:id          IS NULL OR m.id           = :id)
+        WHERE m.pharmacy.id = :pharmacyId
+          AND (:id          IS NULL OR m.id           = :id)
           AND (:name        IS NULL OR LOWER(m.name)
                                        LIKE LOWER(CONCAT('%', :name, '%')))
           AND (:description IS NULL OR LOWER(m.description)
@@ -33,14 +31,18 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
         ORDER BY m.name ASC
         """)
     List<Medicine> searchMedicines(
+            @Param("pharmacyId")  Long         pharmacyId,
             @Param("id")          Long         id,
             @Param("name")        String       name,
             @Param("description") String       description,
             @Param("type")        MedicineType type
     );
 
-    // ── Stock / dashboard queries ─────────────────────────────────────
-    List<Medicine> findByStockQuantityLessThanEqual(int threshold);
+    List<Medicine> findByStockQuantityLessThanEqualAndPharmacyId(int threshold, Long pharmacyId);
 
-    long countByStockQuantityLessThanEqual(int threshold);
+    long countByStockQuantityLessThanEqualAndPharmacyId(int threshold, Long pharmacyId);
+
+    long countByPharmacyId(Long pharmacyId);
+
+    List<Medicine> findByPharmacyIsNull();
 }
