@@ -10,7 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import java.util.Objects;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class LoginController {
@@ -19,9 +19,17 @@ public class LoginController {
     private UserService userService;
 
     @GetMapping("/login")
-    public String showLogin(HttpSession session) {
+    public String showLogin(HttpSession session, Model model,
+                            @RequestParam(value = "registered", required = false) String registered,
+                            @RequestParam(value = "invited",    required = false) String invited) {
         if (session.getAttribute("loggedInUser") != null) {
             return "redirect:/dashboard";
+        }
+        if (registered != null) {
+            model.addAttribute("success", "Registration successful! Please log in.");
+        }
+        if (invited != null) {
+            model.addAttribute("success", "Account created! You can now log in.");
         }
         return "user_auth/user_login";
     }
@@ -29,30 +37,35 @@ public class LoginController {
     @PostMapping("/login")
     public String handleLogin(
             @RequestParam("identifier") String identifier,
-            @RequestParam("password") String password,
+            @RequestParam("password")   String password,
             HttpSession session,
-            Model model) {
+            RedirectAttributes ra) {
 
-        // ── Search across ALL pharmacies by email or phone ────────────
-        // We cannot scope by pharmacyId here because the session has none yet.
-        // findByIdentifierGlobal() searches the users table without a pharmacy filter.
         User user = userService.findByIdentifierGlobal(identifier);
 
-        if (user == null || !Objects.equals(user.getPassword(), password)) {
-            model.addAttribute("error", "Invalid email / phone or password. Please try again.");
-            return "user_auth/user_login";
+        // ── User not found ────────────────────────────────────────────
+        if (user == null) {
+            ra.addFlashAttribute("error", "Invalid email/phone or password.");
+            return "redirect:/login";
         }
 
-        // ── Resolve pharmacyId from the user's own pharmacy link ──────
-        Long pharmacyId = TenantContext.DEFAULT_PHARMACY_ID;
-        if (user.getPharmacy() != null && user.getPharmacy().getId() != null) {
-            pharmacyId = user.getPharmacy().getId();
+        // ── Wrong password ────────────────────────────────────────────
+        if (!user.getPassword().equals(password)) {
+            ra.addFlashAttribute("error", "Invalid email/phone or password.");
+            return "redirect:/login";
         }
 
-        // ── Store in session ──────────────────────────────────────────
+        // ── PENDING account — block login ─────────────────────────────
+        if ("PENDING".equals(user.getStatus())) {
+            ra.addFlashAttribute("error",
+                    "Your account is pending approval. Please contact your pharmacy owner.");
+            return "redirect:/login";
+        }
+
+        // ── Success ───────────────────────────────────────────────────
         session.setAttribute("loggedInUser", user);
-        session.setAttribute("userId", user.getId());
-        session.setAttribute("pharmacyId", pharmacyId);
+        session.setAttribute("pharmacyId",   user.getPharmacy().getId());
+        TenantContext.setCurrentPharmacyId(user.getPharmacy().getId()); // ← fixed
 
         return "redirect:/dashboard";
     }
@@ -60,6 +73,7 @@ public class LoginController {
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         session.invalidate();
+        TenantContext.clear();
         return "redirect:/login";
     }
 

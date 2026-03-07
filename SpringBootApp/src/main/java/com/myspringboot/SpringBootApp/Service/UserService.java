@@ -1,6 +1,7 @@
 package com.myspringboot.SpringBootApp.Service;
 
 import com.myspringboot.SpringBootApp.model.Pharmacy;
+import com.myspringboot.SpringBootApp.model.Role;
 import com.myspringboot.SpringBootApp.model.User;
 import com.myspringboot.SpringBootApp.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,31 +13,22 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private TenantPharmacyService tenantPharmacyService;
 
-    @Autowired
-    private TenantPharmacyService tenantPharmacyService;
+    // ── Login ─────────────────────────────────────────────────────────
 
-    // ── Login: global search (no pharmacy context yet) ────────────────
-
-    /**
-     * Used by LoginController — searches across ALL pharmacies.
-     * After finding the user, LoginController reads user.getPharmacy().getId()
-     * and stores it in the session.
-     */
     public User findByIdentifierGlobal(String identifier) {
         User byEmail = userRepository.findByEmail(identifier);
         if (byEmail != null) return byEmail;
         return userRepository.findByPhone(identifier);
     }
 
-    // ── Legacy: pharmacy-scoped search (kept for compatibility) ───────
     public User findByIdentifier(String identifier) {
         return findByIdentifierGlobal(identifier);
     }
 
-    // ── Registration checks ───────────────────────────────────────────
+    // ── Existence checks ──────────────────────────────────────────────
 
     public boolean existsByEmailInPharmacy(String email, Long pharmacyId) {
         return userRepository.existsByEmailAndPharmacyId(email, pharmacyId);
@@ -58,17 +50,11 @@ public class UserService {
 
     // ── Save ──────────────────────────────────────────────────────────
 
-    /**
-     * Signup flow: pharmacy is explicitly provided (no session yet).
-     */
     public User saveUserWithPharmacy(User user, Pharmacy pharmacy) {
         user.setPharmacy(pharmacy);
         return userRepository.save(user);
     }
 
-    /**
-     * General save: links user to current session pharmacy.
-     */
     public User saveUser(User user) {
         Pharmacy pharmacy;
         try {
@@ -90,5 +76,85 @@ public class UserService {
     public List<User> getAllUsersInCurrentPharmacy() {
         return userRepository.findByPharmacyId(
                 tenantPharmacyService.getCurrentPharmacyId());
+    }
+
+    // ── Staff management (OWNER only) ─────────────────────────────────
+
+    /**
+     * Add a new staff/pharmacist user to the owner's pharmacy.
+     * Validates uniqueness within that pharmacy.
+     *
+     * @param newUser   User object (username, email/phone, password already set)
+     * @param role      PHARMACIST or STAFF
+     * @param owner     The authenticated OWNER performing the action
+     * @throws IllegalArgumentException on duplicate email/phone
+     * @throws SecurityException        if caller is not OWNER
+     */
+    public User addStaff(User newUser, Role role, User owner) {
+        assertOwner(owner);
+
+        Pharmacy pharmacy = owner.getPharmacy();
+        Long pharmacyId   = pharmacy.getId();
+
+        if (newUser.getEmail() != null && !newUser.getEmail().isBlank()
+                && existsByEmailInPharmacy(newUser.getEmail(), pharmacyId)) {
+            throw new IllegalArgumentException(
+                    "A user with this email already exists in your pharmacy.");
+        }
+
+        if (newUser.getPhone() != null && !newUser.getPhone().isBlank()
+                && existsByPhoneInPharmacy(newUser.getPhone(), pharmacyId)) {
+            throw new IllegalArgumentException(
+                    "A user with this phone already exists in your pharmacy.");
+        }
+
+        newUser.setRole(role);
+        newUser.setPharmacy(pharmacy);   // ← same pharmacy as owner (tenant-safe)
+        return userRepository.save(newUser);
+    }
+
+    /**
+     * Change the role of an existing staff member.
+     * Target user must belong to the same pharmacy as the owner.
+     */
+    public User updateStaffRole(Long userId, Role newRole, User owner) {
+        assertOwner(owner);
+
+        User target = findStaffInOwnerPharmacy(userId, owner);
+        if (target.isOwner()) {
+            throw new IllegalArgumentException("Cannot change the role of another OWNER.");
+        }
+        target.setRole(newRole);
+        return userRepository.save(target);
+    }
+
+    /**
+     * Remove a staff member. Owner cannot delete themselves.
+     */
+    public void removeStaff(Long userId, User owner) {
+        assertOwner(owner);
+
+        if (owner.getId().equals(userId)) {
+            throw new IllegalArgumentException("You cannot remove yourself.");
+        }
+
+        User target = findStaffInOwnerPharmacy(userId, owner);
+        userRepository.delete(target);
+    }
+
+    // ── Internal helpers ──────────────────────────────────────────────
+
+    private void assertOwner(User user) {
+        if (user == null || !user.isOwner()) {
+            throw new SecurityException("Only an OWNER can manage staff.");
+        }
+    }
+
+    /** Fetches a user that belongs to the same pharmacy as the owner. */
+    private User findStaffInOwnerPharmacy(Long userId, User owner) {
+        return userRepository
+                .findByIdAndPharmacyId(userId, owner.getPharmacy().getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "User not found in your pharmacy."));
     }
 }

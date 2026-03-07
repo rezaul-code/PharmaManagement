@@ -5,8 +5,182 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard — PharmaManagement</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <style>
+    /* ── Pharmacy Details Overlay Panel ─────────────────────────── */
+    .pharmacy-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .pharmacy-overlay.open {
+      pointer-events: all;
+    }
+
+    .pharmacy-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0);
+      transition: background .25s ease;
+    }
+    .pharmacy-overlay.open .pharmacy-backdrop {
+      background: rgba(0, 0, 0, .45);
+    }
+
+    /* panel — slides up from just above sidebar footer */
+    .pharmacy-panel {
+      position: absolute;
+      bottom: 80px;
+      left: 12px;
+      width: 232px;
+      background: #1e293b;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      transform: translateY(16px);
+      opacity: 0;
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
+      overflow: hidden;
+    }
+    .pharmacy-overlay.open .pharmacy-panel {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .pp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .pp-header-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .pp-close {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: rgba(255,255,255,.07);
+      border: none; cursor: pointer;
+      color: #94a3b8; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .pp-close:hover { background: rgba(255,255,255,.14); color: #e2e8f0; }
+
+    .pp-row {
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .pp-row:last-child { border-bottom: none; }
+    .pp-label {
+      font-size: 10px; font-weight: 600;
+      color: #475569; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: 3px;
+    }
+    .pp-value {
+      font-size: 13px; font-weight: 600; color: #e2e8f0; line-height: 1.4;
+    }
+    .pp-value.mono {
+      font-family: var(--font-mono, monospace);
+      letter-spacing: .03em; color: #34d399;
+    }
+
+    /* clickable sidebar profile */
+    .sidebar-user {
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 6px 8px;
+      margin: -6px -8px;
+      transition: background .18s;
+    }
+    .sidebar-user:hover { background: rgba(255,255,255,.06); }
+    .user-hint {
+      font-size: 10px; color: #475569; margin-top: 3px; padding-left: 2px;
+    }
+
+    /* ── Topbar pharmacy badge ───────────────────────────────────── */
+    .topbar-pharmacy {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      margin-right: 16px;
+      padding: 6px 14px 6px 10px;
+      background: rgba(52, 211, 153, .08);
+      border: 1px solid rgba(52, 211, 153, .2);
+      border-radius: 999px;
+    }
+    .topbar-pharmacy-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 2px rgba(52, 211, 153, .25);
+    }
+    .topbar-pharmacy-name {
+      font-size: 13px; font-weight: 700;
+      color: #34d399; white-space: nowrap;
+    }
+
+    /* ── Role badge in sidebar ──────────────────────────────────── */
+    .role-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .role-owner      { background: rgba(239,68,68,.15);  color: #f87171; }
+    .role-pharmacist { background: rgba(59,130,246,.15); color: #60a5fa; }
+    .role-staff      { background: rgba(148,163,184,.12); color: #94a3b8; }
+  </style>
 </head>
 <body>
+
+<!-- ══ PHARMACY DETAILS OVERLAY ══════════════════════════════════════ -->
+<div class="pharmacy-overlay" id="pharmacyOverlay">
+  <div class="pharmacy-backdrop" id="pharmacyBackdrop"></div>
+  <div class="pharmacy-panel">
+
+    <div class="pp-header">
+      <span class="pp-header-title">🏥 Pharmacy Info</span>
+      <button class="pp-close" id="pharmacyClose">✕</button>
+    </div>
+
+    <div class="pp-row">
+      <div class="pp-label">Pharmacy Name</div>
+      <div class="pp-value" th:text="${pharmacy?.name ?: '—'}">—</div>
+    </div>
+
+    <div class="pp-row">
+      <div class="pp-label">License No.</div>
+      <div class="pp-value mono" th:text="${pharmacy?.licenseNumber ?: '—'}">—</div>
+    </div>
+
+    <div class="pp-row">
+      <div class="pp-label">Phone</div>
+      <div class="pp-value" th:text="${pharmacy?.phone ?: '—'}">—</div>
+    </div>
+
+    <div class="pp-row">
+      <div class="pp-label">Email</div>
+      <div class="pp-value" th:text="${pharmacy?.email ?: '—'}">—</div>
+    </div>
+
+    <div class="pp-row">
+      <div class="pp-label">Address</div>
+      <div class="pp-value" style="font-weight:400;color:#94a3b8;font-size:12px;"
+           th:text="${pharmacy?.address ?: '—'}">—</div>
+    </div>
+
+  </div>
+</div>
 
 <!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
 <aside class="sidebar">
@@ -19,20 +193,27 @@
   </div>
 
   <nav class="sidebar-nav">
-    <div class="nav-section-label">Main</div>
 
+    <!-- MAIN -->
+    <div class="nav-section-label">Main</div>
     <a href="/dashboard" class="nav-item active">
       <span class="nav-icon">🏠</span> Dashboard
     </a>
 
+    <!-- MEDICINE -->
     <div class="nav-section-label">Medicine</div>
     <a href="/medicine/show" class="nav-item">
       <span class="nav-icon">💊</span> All Medicines
     </a>
-    <a href="/medicine/add" class="nav-item">
-      <span class="nav-icon">➕</span> Add Medicine
-    </a>
 
+    <!-- Add Medicine — OWNER and PHARMACIST only -->
+    <th:block th:if="${session.loggedInUser?.canManageMedicines()}">
+      <a href="/medicine/add" class="nav-item">
+        <span class="nav-icon">➕</span> Add Medicine
+      </a>
+    </th:block>
+
+    <!-- BILLING -->
     <div class="nav-section-label">Billing</div>
     <a href="/billing/new" class="nav-item">
       <span class="nav-icon">🧾</span> New Bill
@@ -40,16 +221,44 @@
     <a href="/billing/list" class="nav-item">
       <span class="nav-icon">📋</span> Bill History
     </a>
+
+    <!-- STAFF — OWNER only -->
+    <th:block th:if="${session.loggedInUser?.isOwner()}">
+      <div class="nav-section-label">Staff</div>
+      <a href="/staff" class="nav-item">
+        <span class="nav-icon">👥</span> Manage Staff
+      </a>
+    </th:block>
+
   </nav>
 
   <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="avatar">A</div>
-      <div class="user-info">
-        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
-        <div class="user-role">Pharmacist</div>
+
+    <!-- Profile button — click to open pharmacy panel -->
+    <div class="sidebar-user" id="pharmacyTrigger" title="View pharmacy details">
+      <div style="display:flex;align-items:center;gap:10px;">
+
+        <!-- Dynamic avatar initial -->
+        <div class="avatar"
+             th:text="${session.loggedInUser?.avatarInitial ?: 'A'}">A</div>
+
+        <div class="user-info">
+          <!-- Dynamic username -->
+          <div class="user-name"
+               th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
+
+          <!-- Dynamic role badge -->
+          <span th:with="r=${session.loggedInUser?.role?.name()}"
+                class="role-badge"
+                th:classappend="${r == 'OWNER'} ? 'role-owner' : (${r == 'PHARMACIST'} ? 'role-pharmacist' : 'role-staff')"
+                th:text="${session.loggedInUser?.role ?: 'STAFF'}">STAFF</span>
+        </div>
+
+        <span style="margin-left:auto;font-size:14px;color:#475569;">›</span>
       </div>
+      <div class="user-hint">Click for pharmacy info</div>
     </div>
+
     <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;
        color:#94a3b8;font-size:13px;transition:.18s ease;"
        onmouseover="this.style.background='rgba(255,255,255,.06)'"
@@ -68,9 +277,18 @@
       Dashboard
       <small>Welcome back — here's what's happening today</small>
     </div>
+
+    <!-- Pharmacy name badge -->
+    <div class="topbar-pharmacy" th:if="${pharmacy != null}">
+      <div class="topbar-pharmacy-dot"></div>
+      <span class="topbar-pharmacy-name" th:text="${pharmacy.name}">Pharmacy</span>
+    </div>
+
     <div class="topbar-actions">
       <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
-      <a href="/medicine/add" class="topbar-btn btn-outline">➕ Add Medicine</a>
+      <!-- Add Medicine button — OWNER and PHARMACIST only -->
+      <a th:if="${session.loggedInUser?.canManageMedicines()}"
+         href="/medicine/add" class="topbar-btn btn-outline">➕ Add Medicine</a>
     </div>
   </div>
 
@@ -201,6 +419,21 @@
 
   </div><!-- /page-content -->
 </div><!-- /main-wrapper -->
+
+<script>
+  const overlay  = document.getElementById('pharmacyOverlay');
+  const trigger  = document.getElementById('pharmacyTrigger');
+  const backdrop = document.getElementById('pharmacyBackdrop');
+  const closeBtn = document.getElementById('pharmacyClose');
+
+  function openPanel()  { overlay.classList.add('open'); }
+  function closePanel() { overlay.classList.remove('open'); }
+
+  trigger.addEventListener('click', openPanel);
+  backdrop.addEventListener('click', closePanel);
+  closeBtn.addEventListener('click', closePanel);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+</script>
 
 </body>
 </html>
