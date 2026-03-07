@@ -178,6 +178,8 @@
       <div class="pp-value" style="font-weight:400;color:#94a3b8;font-size:12px;"
            th:text="${pharmacy?.address ?: '—'}">—</div>
     </div>
+    
+
 
   </div>
 </div>
@@ -222,13 +224,19 @@
       <span class="nav-icon">📋</span> Bill History
     </a>
 
-    <!-- STAFF — OWNER only -->
-    <th:block th:if="${session.loggedInUser?.isOwner()}">
-      <div class="nav-section-label">Staff</div>
-      <a href="/staff" class="nav-item">
-        <span class="nav-icon">👥</span> Manage Staff
-      </a>
-    </th:block>
+	<!-- STAFF — OWNER only -->
+	<th:block th:if="${session.loggedInUser?.isOwner()}">
+	  <div class="nav-section-label">Staff</div>
+	  <a href="/staff" class="nav-item">
+	    <span class="nav-icon">👥</span> Manage Staff
+	  </a>
+	
+	  <!-- ✅ ADD THIS — Settings link inside the same isOwner() block -->
+	  <div class="nav-section-label">Admin</div>
+	  <a href="/pharmacy/settings" class="nav-item">
+	    <span class="nav-icon">⚙️</span> Pharmacy Settings
+	  </a>
+	</th:block>
 
   </nav>
 

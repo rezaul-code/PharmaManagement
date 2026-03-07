@@ -23,17 +23,22 @@ public class Pharmacy {
     private String name;
 
     private String address;
-
     private String phone;
-
     private String email;
 
     /** Licence / registration number — useful for invoice headers */
     @Column(name = "license_number")
     private String licenseNumber;
 
-    public Pharmacy() {
-    }
+    /** GST Number — displayed on invoices */
+    @Column(name = "gst_number")
+    private String gstNumber;
+
+    /** Footer text printed at the bottom of every bill */
+    @Column(name = "invoice_footer", length = 500)
+    private String invoiceFooter;
+
+    public Pharmacy() {}
 
     public Pharmacy(String name) {
         this.name = name;
@@ -58,4 +63,17 @@ public class Pharmacy {
 
     public String getLicenseNumber() { return licenseNumber; }
     public void setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; }
+
+    public String getGstNumber() { return gstNumber; }
+    public void setGstNumber(String gstNumber) { this.gstNumber = gstNumber; }
+
+    public String getInvoiceFooter() { return invoiceFooter; }
+    public void setInvoiceFooter(String invoiceFooter) { this.invoiceFooter = invoiceFooter; }
+
+    // ── Helper: avatar initial for sidebar ──────────────────────────
+    public String getAvatarInitial() {
+        return (name != null && !name.isEmpty())
+                ? String.valueOf(name.charAt(0)).toUpperCase()
+                : "P";
+    }
 }
