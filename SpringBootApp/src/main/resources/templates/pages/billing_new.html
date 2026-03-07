@@ -8,36 +8,8 @@
 </head>
 <body>
 
-<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
-<aside class="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-icon">💊</div>
-    <div class="brand-text">
-      <span class="brand-name">PharmaManage</span>
-      <span class="brand-sub">v2.0 Pro</span>
-    </div>
-  </div>
-  <nav class="sidebar-nav">
-    <div class="nav-section-label">Main</div>
-    <a href="/dashboard" class="nav-item"><span class="nav-icon">🏠</span> Dashboard</a>
-    <div class="nav-section-label">Medicine</div>
-    <a href="/medicine/show" class="nav-item"><span class="nav-icon">💊</span> All Medicines</a>
-    <a href="/medicine/add"  class="nav-item"><span class="nav-icon">➕</span> Add Medicine</a>
-    <div class="nav-section-label">Billing</div>
-    <a href="/billing/new"  class="nav-item active"><span class="nav-icon">🧾</span> New Bill</a>
-    <a href="/billing/list" class="nav-item"><span class="nav-icon">📋</span> Bill History</a>
-  </nav>
-  <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="avatar">A</div>
-      <div class="user-info">
-        <div class="user-name" th:text="${session.loggedInUser?.username ?: 'Admin'}">Admin</div>
-        <div class="user-role">Pharmacist</div>
-      </div>
-    </div>
-    <a href="/logout" style="display:block;margin-top:10px;padding:8px 12px;border-radius:8px;color:#94a3b8;font-size:13px;">🚪 Sign Out</a>
-  </div>
-</aside>
+<!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
+<div th:replace="~{fragments/sidebar :: sidebar(activePage='medicines')}"></div>
 
 <!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
 <div class="main-wrapper">
