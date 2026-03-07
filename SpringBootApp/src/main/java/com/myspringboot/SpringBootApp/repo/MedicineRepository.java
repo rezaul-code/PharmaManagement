@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,4 +46,31 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
     long countByPharmacyId(Long pharmacyId);
 
     List<Medicine> findByPharmacyIsNull();
+    
+    @Query("""
+    	    SELECT COUNT(m) FROM Medicine m
+    	    WHERE m.pharmacy.id   = :pharmacyId
+    	      AND m.expiryDate   IS NOT NULL
+    	      AND m.expiryDate   >= :today
+    	      AND m.expiryDate   <= :threshold
+    	    """)
+    	long countExpiringBetween(
+    	        @Param("pharmacyId") Long      pharmacyId,
+    	        @Param("today")      LocalDate today,
+    	        @Param("threshold")  LocalDate threshold
+    	);
+
+    	@Query("""
+    	    SELECT m FROM Medicine m
+    	    WHERE m.pharmacy.id   = :pharmacyId
+    	      AND m.expiryDate   IS NOT NULL
+    	      AND m.expiryDate   >= :today
+    	      AND m.expiryDate   <= :threshold
+    	    ORDER BY m.expiryDate ASC
+    	    """)
+    	List<Medicine> findExpiringBetween(
+    	        @Param("pharmacyId") Long      pharmacyId,
+    	        @Param("today")      LocalDate today,
+    	        @Param("threshold")  LocalDate threshold
+    	);
 }

@@ -22,18 +22,17 @@ public class HelloController {
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-
         // ── Pharmacy info (tenant-scoped) ────────────────────────────
         model.addAttribute("pharmacy", tenantPharmacyService.getCurrentPharmacy());
 
         // ── Stat cards ───────────────────────────────────────────────
-        model.addAttribute("totalMedicines", medicineService.getTotalCount());
-        model.addAttribute("lowStockCount",  medicineService.getLowStockCount());
-        model.addAttribute("totalBills",     billingService.getTotalBillCount());
-        model.addAttribute("todaySales",     billingService.getTodaySales());
+        model.addAttribute("totalMedicines",   medicineService.getTotalCount());
+        model.addAttribute("lowStockCount",    medicineService.getLowStockCount());
+        model.addAttribute("expiringCount",    medicineService.getExpiringWithin30DaysCount()); // ← REPLACES totalBills
+        model.addAttribute("todaySales",       billingService.getTodaySales());
 
         // ── Tables ───────────────────────────────────────────────────
-        model.addAttribute("lowStockMeds",   medicineService.getLowStockMedicines());
+        model.addAttribute("lowStockMeds",     medicineService.getLowStockMedicines());
         model.addAttribute("recentBills",
                 billingService.getAllBills().stream().limit(5).toList());
 

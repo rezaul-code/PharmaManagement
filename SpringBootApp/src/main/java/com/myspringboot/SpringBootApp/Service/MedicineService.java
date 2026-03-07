@@ -6,6 +6,7 @@ import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,5 +90,19 @@ public class MedicineService {
                 10,
                 tenantPharmacyService.getCurrentPharmacyId()
         );
+    }
+    
+    public long getExpiringWithin30DaysCount() {
+        LocalDate today    = LocalDate.now();
+        LocalDate deadline = today.plusDays(30);
+        return medicineRepository.countExpiringBetween(
+                tenantPharmacyService.getCurrentPharmacyId(), today, deadline);
+    }
+
+    public List<Medicine> getExpiringWithin30Days() {
+        LocalDate today    = LocalDate.now();
+        LocalDate deadline = today.plusDays(30);
+        return medicineRepository.findExpiringBetween(
+                tenantPharmacyService.getCurrentPharmacyId(), today, deadline);
     }
 }
