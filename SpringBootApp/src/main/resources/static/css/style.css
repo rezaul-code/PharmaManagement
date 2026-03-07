@@ -735,3 +735,13 @@ textarea.form-control { resize: vertical; min-height: 90px; }
   .invoice-header { flex-direction: column; gap: 16px; }
   .invoice-meta { text-align: left; }
 }
+
+.role-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.role-owner      { background: rgba(239,68,68,.15);  color: #f87171; }
+.role-pharmacist { background: rgba(59,130,246,.15); color: #60a5fa; }
+.role-staff      { background: rgba(148,163,184,.12); color: #94a3b8; }
