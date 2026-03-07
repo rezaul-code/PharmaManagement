@@ -1,5 +1,6 @@
 package com.myspringboot.SpringBootApp.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,7 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -27,7 +27,6 @@ public class Medicine {
     private String name;
 
     private String manufacturer;
-
     private String batchNo;
 
     @Column(precision = 10, scale = 2)
@@ -47,12 +46,12 @@ public class Medicine {
 
     private String description;
 
+    @JsonIgnore                          // ← THIS is the fix
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id")
     private Pharmacy pharmacy;
 
-    public Medicine() {
-    }
+    public Medicine() {}
 
     public Medicine(String name, BigDecimal price, BigDecimal gstPercentage, Integer stockQuantity) {
         this.name = name;
@@ -61,92 +60,38 @@ public class Medicine {
         this.stockQuantity = stockQuantity;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getManufacturer() { return manufacturer; }
+    public void setManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
 
-    public String getManufacturer() {
-        return manufacturer;
-    }
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 
-    public void setManufacturer(String manufacturer) {
-        this.manufacturer = manufacturer;
-    }
+    public BigDecimal getGstPercentage() { return gstPercentage; }
+    public void setGstPercentage(BigDecimal gstPercentage) { this.gstPercentage = gstPercentage; }
 
-    public String getBatchNo() {
-        return batchNo;
-    }
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
-    public void setBatchNo(String batchNo) {
-        this.batchNo = batchNo;
-    }
+    public MedicineType getType() { return type; }
+    public void setType(MedicineType type) { this.type = type; }
 
-    public BigDecimal getPrice() {
-        return price;
-    }
+    public LocalDate getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(LocalDate expiryDate) { this.expiryDate = expiryDate; }
 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public BigDecimal getGstPercentage() {
-        return gstPercentage;
-    }
-
-    public void setGstPercentage(BigDecimal gstPercentage) {
-        this.gstPercentage = gstPercentage;
-    }
-
-    public Integer getStockQuantity() {
-        return stockQuantity;
-    }
-
-    public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
-    }
-
-    public MedicineType getType() {
-        return type;
-    }
-
-    public void setType(MedicineType type) {
-        this.type = type;
-    }
-
-    public LocalDate getExpiryDate() {
-        return expiryDate;
-    }
-    public void setExpiryDate(LocalDate expiryDate) {
-        this.expiryDate = expiryDate;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Pharmacy getPharmacy() {
-        return pharmacy;
-    }
-
-    public void setPharmacy(Pharmacy pharmacy) {
-        this.pharmacy = pharmacy;
-    }
+    public Pharmacy getPharmacy() { return pharmacy; }
+    public void setPharmacy(Pharmacy pharmacy) { this.pharmacy = pharmacy; }
 
     public boolean isLowStock() {
         return stockQuantity != null && stockQuantity <= 10;
