@@ -324,14 +324,21 @@
         </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon blue">📋</div>
-        <div class="stat-info">
-          <div class="stat-label">Total Bills</div>
-          <div class="stat-value" th:text="${totalBills}">0</div>
-          <div class="stat-sub">All time</div>
-        </div>
-      </div>
+      <div class="stat-card" th:classappend="${expiringCount > 0 ? 'stat-danger' : ''}">
+		  <div class="stat-icon amber">📅</div>
+		  <div class="stat-info">
+		    <div class="stat-label">Expiring in 30 Days</div>
+		    <div class="stat-value" th:text="${expiringCount}">0</div>
+		    <div class="stat-sub">
+		      <span th:if="${expiringCount > 0}" style="color:#f87171;font-weight:600;">
+		        ⚠️ Needs attention
+		      </span>
+		      <span th:if="${expiringCount == 0}">
+		        ✅ All clear
+		      </span>
+		    </div>
+		  </div>
+		</div>
 
       <div class="stat-card">
         <div class="stat-icon amber">💰</div>
