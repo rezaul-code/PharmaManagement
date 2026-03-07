@@ -2,6 +2,7 @@ package com.myspringboot.SpringBootApp.controller;
 
 import com.myspringboot.SpringBootApp.Service.BillingService;
 import com.myspringboot.SpringBootApp.Service.MedicineService;
+import com.myspringboot.SpringBootApp.Service.TenantPharmacyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,20 +17,25 @@ public class HelloController {
     @Autowired
     private BillingService billingService;
 
+    @Autowired
+    private TenantPharmacyService tenantPharmacyService;   // ← ADD THIS
+
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        // Stats cards
-        model.addAttribute("totalMedicines",  medicineService.getTotalCount());
-        model.addAttribute("lowStockCount",   medicineService.getLowStockCount());
-        model.addAttribute("totalBills",      billingService.getTotalBillCount());
-        model.addAttribute("todaySales",      billingService.getTodaySales());
 
-        // Low-stock table
-        model.addAttribute("lowStockMeds",    medicineService.getLowStockMedicines());
+        // ── Pharmacy info (tenant-scoped) ────────────────────────────
+        model.addAttribute("pharmacy", tenantPharmacyService.getCurrentPharmacy());
 
-        // Recent bills (first 5 from already-sorted list)
+        // ── Stat cards ───────────────────────────────────────────────
+        model.addAttribute("totalMedicines", medicineService.getTotalCount());
+        model.addAttribute("lowStockCount",  medicineService.getLowStockCount());
+        model.addAttribute("totalBills",     billingService.getTotalBillCount());
+        model.addAttribute("todaySales",     billingService.getTodaySales());
+
+        // ── Tables ───────────────────────────────────────────────────
+        model.addAttribute("lowStockMeds",   medicineService.getLowStockMedicines());
         model.addAttribute("recentBills",
-            billingService.getAllBills().stream().limit(5).toList());
+                billingService.getAllBills().stream().limit(5).toList());
 
         return "pages/dashboard";
     }

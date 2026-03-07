@@ -13,13 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,32 +23,55 @@ import java.util.Optional;
 @RequestMapping("/billing")
 public class BillingController {
 
-    @Autowired
-    private BillingService billingService;
+    @Autowired private BillingService billingService;
+    @Autowired private MedicineService medicineService;
 
-    @Autowired
-    private MedicineService medicineService;
+    // ── Guard helper ──────────────────────────────────────────────────
+
+    /**
+     * All three roles (OWNER, PHARMACIST, STAFF) can access billing.
+     * This guard simply ensures the user is logged in.
+     */
+    private User requireLoggedIn(HttpSession session, RedirectAttributes ra) {
+        User user = (User) session.getAttribute("loggedInUser");
+        if (user == null && ra != null) {
+            ra.addFlashAttribute("error", "Please log in to access billing.");
+        }
+        return user;
+    }
+
+    // ── New bill form (all roles) ─────────────────────────────────────
 
     @GetMapping("/new")
-    public String newBillForm(Model model) {
+    public String newBillForm(HttpSession session, Model model, RedirectAttributes ra) {
+        User user = requireLoggedIn(session, ra);
+        if (user == null) return "redirect:/login";
+
         model.addAttribute("billingForm", new BillingForm());
+        model.addAttribute("currentUser", user);
         return "pages/billing_new";
     }
+
+    // ── Create bill (all roles) ───────────────────────────────────────
 
     @PostMapping("/create")
     public String createBill(
             @Valid @ModelAttribute("billingForm") BillingForm form,
             BindingResult bindingResult,
             HttpSession session,
-            Model model) {
+            Model model,
+            RedirectAttributes ra) {
+
+        User user = requireLoggedIn(session, ra);
+        if (user == null) return "redirect:/login";
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("error", "Please correct the highlighted billing form fields.");
+            model.addAttribute("error",
+                    "Please correct the highlighted billing form fields.");
             model.addAttribute("billingForm", form);
+            model.addAttribute("currentUser", user);
             return "pages/billing_new";
         }
-
-        User user = (User) session.getAttribute("loggedInUser");
 
         try {
             Billing billing = billingService.createBill(form, user);
@@ -61,25 +79,42 @@ public class BillingController {
         } catch (Exception e) {
             model.addAttribute("error", "Failed to create bill: " + e.getMessage());
             model.addAttribute("billingForm", form);
+            model.addAttribute("currentUser", user);
             return "pages/billing_new";
         }
     }
 
+    // ── View single bill (all roles) ──────────────────────────────────
+
     @GetMapping("/view/{id}")
-    public String viewBill(@PathVariable Long id, Model model) {
+    public String viewBill(@PathVariable Long id,
+                           HttpSession session,
+                           Model model,
+                           RedirectAttributes ra) {
+        User user = requireLoggedIn(session, ra);
+        if (user == null) return "redirect:/login";
+
         Optional<Billing> billing = billingService.getBillById(id);
-        if (billing.isEmpty()) {
-            return "redirect:/billing/list";
-        }
-        model.addAttribute("billing", billing.get());
+        if (billing.isEmpty()) return "redirect:/billing/list";
+
+        model.addAttribute("billing",     billing.get());
+        model.addAttribute("currentUser", user);
         return "pages/billing_view";
     }
 
+    // ── List all bills (all roles) ────────────────────────────────────
+
     @GetMapping("/list")
-    public String listBills(Model model) {
-        model.addAttribute("bills", billingService.getAllBills());
+    public String listBills(HttpSession session, Model model, RedirectAttributes ra) {
+        User user = requireLoggedIn(session, ra);
+        if (user == null) return "redirect:/login";
+
+        model.addAttribute("bills",       billingService.getAllBills());
+        model.addAttribute("currentUser", user);
         return "pages/billing_list";
     }
+
+    // ── AJAX: medicine search (all roles) ─────────────────────────────
 
     @GetMapping("/medicine/search")
     @ResponseBody
