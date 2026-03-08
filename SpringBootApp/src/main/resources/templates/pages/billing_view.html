@@ -8,10 +8,8 @@
 </head>
 <body>
 
-<!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
 <div th:replace="~{fragments/sidebar :: sidebar(activePage='medicines')}"></div>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
 <div class="main-wrapper">
   <div class="topbar no-print">
     <div class="topbar-title">
@@ -26,17 +24,17 @@
 
   <div class="page-content">
 
-    <!-- ══ INVOICE ══════════════════════════════════════════════════ -->
     <div class="invoice-wrap">
 
       <!-- Header -->
       <div class="invoice-header">
         <div>
-          <div class="invoice-brand-name">💊 PharmaManage</div>
-          <div class="invoice-brand-sub">Professional Pharmacy Management</div>
+          <div class="invoice-brand-name">💊 <span th:text="${pharmacy.name}">Pharmacy</span></div>
           <div style="margin-top:12px;font-size:12px;color:#94a3b8;line-height:1.7">
-            123, Medical Complex, MG Road<br/>
-            City — 500001 | GSTIN: 36AAAA0000A1Z5
+            <span th:text="${pharmacy.address}"></span><br/>
+            <span th:if="${pharmacy.phone}" th:text="'📞 ' + ${pharmacy.phone}"></span><br/>
+            <span th:if="${pharmacy.email}" th:text="'✉ ' + ${pharmacy.email}"></span><br/>
+            <span th:if="${pharmacy.gstNumber}" th:text="'GSTIN: ' + ${pharmacy.gstNumber}"></span>
           </div>
         </div>
         <div class="invoice-meta">
@@ -64,8 +62,7 @@
           </div>
           <div>
             <div class="invoice-party-label">Served By</div>
-            <div class="invoice-party-name"
-                 th:text="${billing.createdBy?.username ?: 'Admin'}">Admin</div>
+            <div class="invoice-party-name" th:text="${billing.createdBy?.username ?: 'Admin'}">Admin</div>
             <div class="invoice-party-sub">Pharmacist</div>
           </div>
         </div>
@@ -88,9 +85,7 @@
           <tbody>
             <tr th:each="item, iStat : ${billing.items}">
               <td th:text="${iStat.count}" style="color:var(--text-muted)">1</td>
-              <td>
-                <strong th:text="${item.medicineName ?: item.medicine?.name}">Medicine</strong>
-              </td>
+              <td><strong th:text="${item.medicineName ?: item.medicine?.name}">Medicine</strong></td>
               <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)"
                   th:text="${item.batchNo ?: '—'}">BATCH</td>
               <td style="text-align:right" th:text="${item.quantity}">1</td>
@@ -98,8 +93,7 @@
                 ₹<span th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}">0.00</span>
               </td>
               <td style="text-align:right">
-                <span class="badge badge-info"
-                      th:text="${item.gstPercentage} + '%'">0%</span>
+                <span class="badge badge-info" th:text="${item.gstPercentage} + '%'">0%</span>
               </td>
               <td style="text-align:right;font-family:var(--font-mono)">
                 ₹<span th:text="${#numbers.formatDecimal(item.itemTotal, 1, 2)}">0.00</span>
@@ -117,56 +111,47 @@
         <!-- Totals -->
         <div style="display:flex;justify-content:flex-end">
           <div class="invoice-totals">
-
             <div class="invoice-total-row">
               <span class="invoice-total-label">Subtotal (excl. GST)</span>
-              <span class="invoice-total-value">
-                ₹<span th:text="${#numbers.formatDecimal(billing.subtotal, 1, 2)}">0.00</span>
-              </span>
+              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.subtotal, 1, 2)}">0.00</span></span>
             </div>
-
             <div class="invoice-total-row">
               <span class="invoice-total-label">CGST</span>
-              <span class="invoice-total-value">
-                ₹<span th:text="${#numbers.formatDecimal(billing.cgst, 1, 2)}">0.00</span>
-              </span>
+              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.cgst, 1, 2)}">0.00</span></span>
             </div>
-
             <div class="invoice-total-row">
               <span class="invoice-total-label">SGST</span>
-              <span class="invoice-total-value">
-                ₹<span th:text="${#numbers.formatDecimal(billing.sgst, 1, 2)}">0.00</span>
-              </span>
+              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.sgst, 1, 2)}">0.00</span></span>
             </div>
-
             <div class="invoice-total-row">
               <span class="invoice-total-label">Total GST</span>
-              <span class="invoice-total-value" style="color:var(--warning)">
-                ₹<span th:text="${#numbers.formatDecimal(billing.totalGst, 1, 2)}">0.00</span>
-              </span>
+              <span class="invoice-total-value" style="color:var(--warning)">₹<span th:text="${#numbers.formatDecimal(billing.totalGst, 1, 2)}">0.00</span></span>
             </div>
-
             <div class="invoice-total-row" style="border-top:2px solid var(--border)">
               <span>Grand Total</span>
-              <span class="invoice-total-value">
-                ₹<span th:text="${#numbers.formatDecimal(billing.grandTotal, 1, 2)}">0.00</span>
-              </span>
+              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.grandTotal, 1, 2)}">0.00</span></span>
             </div>
-
           </div>
+        </div>
+
+        <!-- Notes -->
+        <div th:if="${billing.notes != null and !billing.notes.isBlank()}"
+             style="margin-top:24px;padding:14px 18px;background:#f8fafc;border-left:4px solid var(--primary);border-radius:6px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">📝 Notes</div>
+          <div style="font-size:14px;color:var(--text)" th:text="${billing.notes}"></div>
         </div>
 
       </div><!-- /invoice-body -->
 
       <!-- Footer -->
       <div class="invoice-footer">
-        Thank you for choosing PharmaManage. This is a computer-generated invoice and does not require a signature.
+        <span th:text="${pharmacy.invoiceFooter ?: 'Thank you for choosing ' + pharmacy.name + '. This is a computer-generated invoice and does not require a signature.'}"></span>
       </div>
 
     </div><!-- /invoice-wrap -->
 
-  </div><!-- /page-content -->
-</div><!-- /main-wrapper -->
+  </div>
+</div>
 
 </body>
 </html>
