@@ -18,10 +18,13 @@ import java.util.stream.Collectors;
 @RequestMapping("/staff")
 public class StaffController {
 
+    private static final int MAX_PHARMACISTS = 1;
+    private static final int MAX_STAFF       = 2;
+
     @Autowired private StaffService   staffService;
     @Autowired private UserRepository userRepository;
 
-    // ── Guard — reloads fresh user from DB to avoid lazy proxy issues ─
+    // ── Guard: reloads fresh user from DB to avoid lazy-proxy issues ──
 
     private User ownerOrRedirect(HttpSession session, RedirectAttributes ra) {
         User sessionUser = (User) session.getAttribute("loggedInUser");
@@ -48,14 +51,21 @@ public class StaffController {
                           && u.getPharmacy().getId().equals(pharmacyId))
                 .collect(Collectors.toList());
 
-        model.addAttribute("staffList",    staffList);
-        model.addAttribute("roles",        new Role[]{Role.PHARMACIST, Role.STAFF});
-        model.addAttribute("currentUser",  owner);
-        model.addAttribute("pharmacyName", pharmacyName);
+        long pharmacistCount = staffList.stream()
+                .filter(u -> u.getRole() == Role.PHARMACIST).count();
+        long staffCount = staffList.stream()
+                .filter(u -> u.getRole() == Role.STAFF).count();
+
+        model.addAttribute("staffList",         staffList);
+        model.addAttribute("roles",             new Role[]{Role.PHARMACIST, Role.STAFF});
+        model.addAttribute("currentUser",       owner);
+        model.addAttribute("pharmacyName",      pharmacyName);
+        model.addAttribute("canAddPharmacist",  pharmacistCount < MAX_PHARMACISTS);
+        model.addAttribute("canAddStaff",       staffCount      < MAX_STAFF);
         return "pages/staff";
     }
 
-    // ── POST /staff/create — directly create staff account ────────────
+    // ── POST /staff/create ────────────────────────────────────────────
 
     @PostMapping("/create")
     public String createStaff(@RequestParam("username") String username,
@@ -80,9 +90,30 @@ public class StaffController {
             return "redirect:/staff";
         }
 
+        // ── Enforce role limits ───────────────────────────────────────
+        Long       pharmacyId = owner.getPharmacy().getId();
+        List<User> staffList  = staffService.getStaffForPharmacy(pharmacyId);
+
+        if (role == Role.PHARMACIST) {
+            long count = staffList.stream()
+                    .filter(u -> u.getRole() == Role.PHARMACIST).count();
+            if (count >= MAX_PHARMACISTS) {
+                ra.addFlashAttribute("error",
+                        "Limit reached: only " + MAX_PHARMACISTS + " pharmacist allowed.");
+                return "redirect:/staff";
+            }
+        } else if (role == Role.STAFF) {
+            long count = staffList.stream()
+                    .filter(u -> u.getRole() == Role.STAFF).count();
+            if (count >= MAX_STAFF) {
+                ra.addFlashAttribute("error",
+                        "Limit reached: only " + MAX_STAFF + " staff members allowed.");
+                return "redirect:/staff";
+            }
+        }
+
         try {
-            staffService.createStaff(email.trim(), password,
-                                     username.trim(), role, owner);
+            staffService.createStaff(email.trim(), password, username.trim(), role, owner);
             ra.addFlashAttribute("success",
                     username.trim() + " added successfully as " + role + ".");
         } catch (IllegalArgumentException e) {
