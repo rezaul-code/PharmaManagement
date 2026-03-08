@@ -38,6 +38,31 @@
         <div class="card" style="margin-bottom:20px">
             <div class="card-header">
                 <div class="card-title">➕ Add New Staff Member</div>
+                <!-- Slot limit indicators -->
+                <div style="display:flex;gap:16px;font-size:12px;color:var(--text-muted)">
+                    <span>
+                        Pharmacist:
+                        <strong th:if="${canAddPharmacist}"
+                                style="color:var(--primary)">
+                            Slot available
+                        </strong>
+                        <strong th:unless="${canAddPharmacist}"
+                                style="color:#ef4444">
+                            1/1 Full
+                        </strong>
+                    </span>
+                    <span>
+                        Staff:
+                        <strong th:if="${canAddStaff}"
+                                style="color:var(--primary)">
+                            Slot available
+                        </strong>
+                        <strong th:unless="${canAddStaff}"
+                                style="color:#ef4444">
+                            2/2 Full
+                        </strong>
+                    </span>
+                </div>
             </div>
             <div style="padding:20px">
                 <form th:action="@{/staff/create}" method="post">
@@ -88,7 +113,7 @@
                                    required minlength="6"/>
                         </div>
 
-                        <!-- Role -->
+                        <!-- Role — options disabled when slot is full -->
                         <div>
                             <label style="display:block;font-size:12px;font-weight:600;
                                           color:var(--text-muted);margin-bottom:6px">
@@ -99,19 +124,28 @@
                                            border:1px solid var(--border);
                                            background:var(--input-bg);
                                            color:var(--text);font-size:14px">
-                                <option th:each="r : ${roles}"
-                                        th:value="${r}"
-                                        th:text="${r}">STAFF</option>
+                                <option value="PHARMACIST"
+                                        th:disabled="${!canAddPharmacist}"
+                                        th:text="${canAddPharmacist} ? 'PHARMACIST' : 'PHARMACIST (full)'">
+                                </option>
+                                <option value="STAFF"
+                                        th:disabled="${!canAddStaff}"
+                                        th:text="${canAddStaff} ? 'STAFF' : 'STAFF (full)'">
+                                </option>
                             </select>
                         </div>
 
-                        <!-- Submit -->
+                        <!-- Submit — disabled only when ALL slots are full -->
                         <div>
                             <button type="submit"
+                                    th:disabled="${!canAddPharmacist and !canAddStaff}"
                                     style="padding:10px 28px;border-radius:8px;
                                            background:var(--primary);color:#fff;
                                            border:none;font-size:14px;font-weight:600;
-                                           cursor:pointer;white-space:nowrap">
+                                           cursor:pointer;white-space:nowrap"
+                                    th:style="${!canAddPharmacist and !canAddStaff}
+                                              ? 'padding:10px 28px;border-radius:8px;background:#9ca3af;color:#fff;border:none;font-size:14px;font-weight:600;cursor:not-allowed;white-space:nowrap'
+                                              : 'padding:10px 28px;border-radius:8px;background:var(--primary);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap'">
                                 ➕ Create
                             </button>
                         </div>
