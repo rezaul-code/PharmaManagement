@@ -43,6 +43,9 @@ public class Billing {
     @Column(name = "patient_phone")
     private String patientPhone;
 
+    @Column(length = 1000)
+    private String notes;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -105,115 +108,48 @@ public class Billing {
         grandTotal = subtotal.add(totalGst);
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getBillNumber() { return billNumber; }
+    public void setBillNumber(String billNumber) { this.billNumber = billNumber; }
 
-    public String getBillNumber() {
-        return billNumber;
-    }
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
 
-    public void setBillNumber(String billNumber) {
-        this.billNumber = billNumber;
-    }
+    public String getPatientPhone() { return patientPhone; }
+    public void setPatientPhone(String patientPhone) { this.patientPhone = patientPhone; }
 
-    public String getPatientName() {
-        return patientName;
-    }
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
 
-    public void setPatientName(String patientName) {
-        this.patientName = patientName;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public String getPatientPhone() {
-        return patientPhone;
-    }
+    public User getCreatedBy() { return createdBy; }
+    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
 
-    public void setPatientPhone(String patientPhone) {
-        this.patientPhone = patientPhone;
-    }
+    public Pharmacy getPharmacy() { return pharmacy; }
+    public void setPharmacy(Pharmacy pharmacy) { this.pharmacy = pharmacy; }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public List<BillingItem> getItems() { return items; }
+    public void setItems(List<BillingItem> items) { this.items = items; }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public BigDecimal getSubtotal() { return subtotal; }
+    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 
-    public User getCreatedBy() {
-        return createdBy;
-    }
+    public BigDecimal getTotalGst() { return totalGst; }
+    public void setTotalGst(BigDecimal totalGst) { this.totalGst = totalGst; }
 
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
-    }
+    public BigDecimal getCgst() { return cgst; }
+    public void setCgst(BigDecimal cgst) { this.cgst = cgst; }
 
-    public Pharmacy getPharmacy() {
-        return pharmacy;
-    }
+    public BigDecimal getSgst() { return sgst; }
+    public void setSgst(BigDecimal sgst) { this.sgst = sgst; }
 
-    public void setPharmacy(Pharmacy pharmacy) {
-        this.pharmacy = pharmacy;
-    }
+    public BigDecimal getGrandTotal() { return grandTotal; }
+    public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = grandTotal; }
 
-    public List<BillingItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<BillingItem> items) {
-        this.items = items;
-    }
-
-    public BigDecimal getSubtotal() {
-        return subtotal;
-    }
-
-    public void setSubtotal(BigDecimal subtotal) {
-        this.subtotal = subtotal;
-    }
-
-    public BigDecimal getTotalGst() {
-        return totalGst;
-    }
-
-    public void setTotalGst(BigDecimal totalGst) {
-        this.totalGst = totalGst;
-    }
-
-    public BigDecimal getCgst() {
-        return cgst;
-    }
-
-    public void setCgst(BigDecimal cgst) {
-        this.cgst = cgst;
-    }
-
-    public BigDecimal getSgst() {
-        return sgst;
-    }
-
-    public void setSgst(BigDecimal sgst) {
-        this.sgst = sgst;
-    }
-
-    public BigDecimal getGrandTotal() {
-        return grandTotal;
-    }
-
-    public void setGrandTotal(BigDecimal grandTotal) {
-        this.grandTotal = grandTotal;
-    }
-
-    public BillingStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BillingStatus status) {
-        this.status = status;
-    }
+    public BillingStatus getStatus() { return status; }
+    public void setStatus(BillingStatus status) { this.status = status; }
 }

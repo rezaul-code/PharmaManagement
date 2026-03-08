@@ -81,7 +81,7 @@
         <div class="card">
           <div class="card-header"><div class="card-title">📝 Notes</div></div>
           <div class="card-body">
-            <textarea class="form-control" rows="4" placeholder="Any notes about this bill…"></textarea>
+            <textarea class="form-control" th:field="*{notes}" rows="4" placeholder="Any notes about this bill…"></textarea>
             <div class="mt-3 d-flex gap-2">
               <button type="submit" class="btn btn-success btn-lg">✅ Save Bill</button>
               <a href="/billing/list" class="btn btn-secondary btn-lg">Cancel</a>
@@ -125,9 +125,6 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════
-     ALL JAVASCRIPT EMBEDDED DIRECTLY — no external file needed
-═══════════════════════════════════════════════════════════════════ -->
 <style>
   .med-search-wrap { position: relative; }
   .ac-dropdown {
@@ -174,7 +171,6 @@
   var rowCounter    = 0;
   var debounceTimer = null;
 
-  /* ── Add row ── */
   window.addItemRow = function () {
     var idx    = rowCounter++;
     var tbody  = document.getElementById("billing-items-tbody");
@@ -187,20 +183,18 @@
 
     tr.innerHTML =
       '<td style="text-align:center;color:#6b7280;font-size:13px;font-weight:600">' + rowNum + '</td>' +
-
       '<td style="position:relative;min-width:210px">' +
         '<div class="med-search-wrap">' +
           '<input type="text" class="form-control medicine-search" placeholder="🔍 Search medicine…" autocomplete="off" />' +
         '</div>' +
-        '<input type="hidden" name="items[' + idx + '].medicineId"    class="medicine-id" />' +
-        '<input type="hidden" name="items[' + idx + '].stockQuantity"  class="medicine-stock" />' +
+        '<input type="hidden" name="items[' + idx + '].medicineId"   class="medicine-id" />' +
+        '<input type="hidden" name="items[' + idx + '].stockQuantity" class="medicine-stock" />' +
         '<ul class="ac-dropdown" id="ac-drop-' + idx + '"></ul>' +
       '</td>' +
-
-      '<td><input type="text"   class="form-control batch-no locked-field"  name="items[' + idx + '].batchNo"       readonly tabindex="-1" placeholder="—" /></td>' +
+      '<td><input type="text"   class="form-control batch-no locked-field" name="items[' + idx + '].batchNo" readonly tabindex="-1" placeholder="—" /></td>' +
       '<td style="width:80px"><input type="number" class="form-control qty-input" name="items[' + idx + '].quantity" value="1" min="1" disabled /></td>' +
-      '<td style="width:110px"><input type="number" class="form-control price-input locked-field" name="items[' + idx + '].unitPrice"      step="0.01" readonly tabindex="-1" placeholder="0.00" /></td>' +
-      '<td style="width:80px"><input  type="number" class="form-control gst-input locked-field"   name="items[' + idx + '].gstPercentage"  step="0.01" readonly tabindex="-1" placeholder="0" /></td>' +
+      '<td style="width:110px"><input type="number" class="form-control price-input" name="items[' + idx + '].unitPrice" step="0.01" placeholder="0.00" oninput="recalcRow(' + idx + ');recalcSummary();" /></td>' +
+      '<td style="width:80px"><input  type="number" class="form-control gst-input"  name="items[' + idx + '].gstPercentage" step="0.01" placeholder="0" oninput="recalcRow(' + idx + ');recalcSummary();" /></td>' +
       '<td><input type="number" class="form-control item-total calc-field" name="items[' + idx + '].itemTotal" readonly tabindex="-1" placeholder="0.00" /></td>' +
       '<td><input type="number" class="form-control gst-amount calc-field" name="items[' + idx + '].gstAmount"  readonly tabindex="-1" placeholder="0.00" /></td>' +
       '<td><input type="number" class="form-control row-total  calc-field" name="items[' + idx + '].rowTotal"   readonly tabindex="-1" placeholder="0.00" /></td>' +
@@ -212,7 +206,6 @@
     recalcSummary();
   };
 
-  /* ── Remove row ── */
   window.removeRow = function (idx) {
     var row = document.getElementById("row-" + idx);
     if (row) row.remove();
@@ -220,17 +213,13 @@
     recalcSummary();
   };
 
-  /* ── Listeners ── */
   function attachListeners(tr, idx) {
     var search = tr.querySelector(".medicine-search");
     var qty    = tr.querySelector(".qty-input");
 
     search.addEventListener("input", function () {
       clearTimeout(debounceTimer);
-      if (tr.dataset.confirmed === "true") {
-        clearRow(tr, idx);
-        return;
-      }
+      if (tr.dataset.confirmed === "true") { clearRow(tr, idx); return; }
       var q = this.value.trim();
       if (q.length < 1) { closeDD(idx); return; }
       debounceTimer = setTimeout(function () { fetchMeds(q, idx); }, 250);
@@ -247,90 +236,62 @@
     qty.addEventListener("input", function () {
       var stock = parseInt(tr.querySelector(".medicine-stock").value) || 0;
       var v     = parseInt(this.value) || 1;
-      if (v < 1)     { v = 1;     this.value = 1; }
-      if (v > stock) { v = stock;  this.value = stock; showHint(idx, "⚠ Max: " + stock + " units", false); }
+      if (v < 1)     { v = 1;    this.value = 1; }
+      if (v > stock) { v = stock; this.value = stock; showHint(idx, "⚠ Max: " + stock + " units", false); }
       else           { showHint(idx, "✔ Available: " + stock + " units", true); }
       recalcRow(idx);
       recalcSummary();
     });
   }
 
-  /* ── Fetch ── */
   function fetchMeds(q, idx) {
     fetch("/billing/medicine/search?q=" + encodeURIComponent(q), {
       credentials: "same-origin",
       headers: { "Accept": "application/json" }
     })
-    .then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
+    .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function (data) { renderDD(Array.isArray(data) ? data : [], idx); })
     .catch(function (e)   { renderDD([], idx, e.message); });
   }
 
-  /* ── Render dropdown ── */
   function renderDD(meds, idx, err) {
     var dd = document.getElementById("ac-drop-" + idx);
     if (!dd) return;
     dd.innerHTML = "";
-
-    if (err) {
-      dd.innerHTML = '<li class="ac-item ac-error">Error: ' + esc(err) + '</li>';
-      dd.style.display = "block"; return;
-    }
-    if (!meds.length) {
-      dd.innerHTML = '<li class="ac-item ac-empty">No medicines found</li>';
-      dd.style.display = "block"; return;
-    }
+    if (err) { dd.innerHTML = '<li class="ac-item ac-error">Error: ' + esc(err) + '</li>'; dd.style.display = "block"; return; }
+    if (!meds.length) { dd.innerHTML = '<li class="ac-item ac-empty">No medicines found</li>'; dd.style.display = "block"; return; }
 
     meds.forEach(function (m) {
-      var li      = document.createElement("li");
+      var li    = document.createElement("li");
       li.className = "ac-item";
-      var stock   = m.stockQuantity != null ? parseInt(m.stockQuantity) : 0;
-      var oos     = stock === 0;
+      var stock = m.stockQuantity != null ? parseInt(m.stockQuantity) : 0;
+      var oos   = stock === 0;
       if (oos) li.classList.add("ac-out-of-stock");
-
-      var bCls = oos ? "ac-badge-out" : (stock <= 10 ? "ac-badge-low" : "ac-badge-ok");
-      var bTxt = oos ? "Out of Stock"  : (stock <= 10 ? "Low: " + stock : "Stock: " + stock);
-
+      var bCls  = oos ? "ac-badge-out" : (stock <= 10 ? "ac-badge-low" : "ac-badge-ok");
+      var bTxt  = oos ? "Out of Stock"  : (stock <= 10 ? "Low: " + stock : "Stock: " + stock);
       li.innerHTML =
         '<div class="ac-name">' + esc(m.name) + '</div>' +
-        '<div class="ac-meta">Batch: <strong>' + esc(m.batchNo || "—") + '</strong> &nbsp;·&nbsp; ' +
-          '₹' + pf(m.price) + ' &nbsp;·&nbsp; GST ' + pf(m.gstPercentage) + '%</div>' +
+        '<div class="ac-meta">Batch: <strong>' + esc(m.batchNo || "—") + '</strong> &nbsp;·&nbsp; ₹' + pf(m.price) + ' &nbsp;·&nbsp; GST ' + pf(m.gstPercentage) + '%</div>' +
         '<span class="ac-badge ' + bCls + '">' + bTxt + '</span>';
-
-      if (!oos) {
-        li.addEventListener("mousedown", function (e) {
-          e.preventDefault();
-          selectMed(m, idx);
-        });
-      }
+      if (!oos) { li.addEventListener("mousedown", function (e) { e.preventDefault(); selectMed(m, idx); }); }
       dd.appendChild(li);
     });
-
     dd.style.display = "block";
   }
 
-  /* ── Select medicine ── */
   function selectMed(m, idx) {
     var tr = document.getElementById("row-" + idx);
     if (!tr) return;
     var stock = m.stockQuantity != null ? parseInt(m.stockQuantity) : 0;
-
     tr.dataset.confirmed = "true";
-    tr.querySelector(".medicine-search").value = m.name           || "";
-    tr.querySelector(".medicine-id").value     = m.id             || "";
+    tr.querySelector(".medicine-search").value = m.name  || "";
+    tr.querySelector(".medicine-id").value     = m.id    || "";
     tr.querySelector(".medicine-stock").value  = stock;
-    tr.querySelector(".batch-no").value        = m.batchNo        || "";
+    tr.querySelector(".batch-no").value        = m.batchNo || "";
     tr.querySelector(".price-input").value     = pf(m.price);
     tr.querySelector(".gst-input").value       = pf(m.gstPercentage);
-
     var qty = tr.querySelector(".qty-input");
-    qty.disabled = false;
-    qty.value    = 1;
-    qty.max      = stock;
-
+    qty.disabled = false; qty.value = 1; qty.max = stock;
     closeDD(idx);
     showHint(idx, "✔ Available: " + stock + " units", true);
     recalcRow(idx);
@@ -338,7 +299,6 @@
     qty.select(); qty.focus();
   }
 
-  /* ── Clear row ── */
   function clearRow(tr, idx) {
     tr.dataset.confirmed = "false";
     tr.querySelector(".medicine-search").value = "";
@@ -356,23 +316,21 @@
     recalcSummary();
   }
 
-  /* ── Row calc ── */
-  function recalcRow(idx) {
-    var tr  = document.getElementById("row-" + idx);
+  window.recalcRow = function (idx) {
+    var tr = document.getElementById("row-" + idx);
     if (!tr) return;
-    var qty  = parseFloat(tr.querySelector(".qty-input").value)   || 0;
-    var p    = parseFloat(tr.querySelector(".price-input").value) || 0;
-    var g    = parseFloat(tr.querySelector(".gst-input").value)   || 0;
-    var it   = r2(qty * p);
-    var ga   = r2(it * g / 100);
-    var rt   = r2(it + ga);
+    var qty = parseFloat(tr.querySelector(".qty-input").value)   || 0;
+    var p   = parseFloat(tr.querySelector(".price-input").value) || 0;
+    var g   = parseFloat(tr.querySelector(".gst-input").value)   || 0;
+    var it  = r2(qty * p);
+    var ga  = r2(it * g / 100);
+    var rt  = r2(it + ga);
     tr.querySelector(".item-total").value = it;
     tr.querySelector(".gst-amount").value = ga;
     tr.querySelector(".row-total").value  = rt;
-  }
+  };
 
-  /* ── Summary ── */
-  function recalcSummary() {
+  window.recalcSummary = function () {
     var sub = 0, gst = 0;
     document.querySelectorAll("#billing-items-tbody tr").forEach(function (tr) {
       sub += parseFloat((tr.querySelector(".item-total") || {}).value) || 0;
@@ -385,9 +343,8 @@
     st("sumTotalGst",  "₹" + gst.toFixed(2));
     st("sumGrandTotal","₹" + gt.toFixed(2));
     sv("hSubtotal", sub); sv("hTotalGst", gst); sv("hCgst", cgst); sv("hSgst", sgst); sv("hGrandTotal", gt);
-  }
+  };
 
-  /* ── Hints ── */
   function showHint(idx, msg, ok) {
     clearHint(idx);
     var wrap = document.querySelector("#row-" + idx + " .med-search-wrap");
@@ -400,7 +357,6 @@
   }
   function clearHint(idx) { var h = document.getElementById("hint-" + idx); if (h) h.remove(); }
 
-  /* ── Form submit guard ── */
   document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("billingForm");
     if (!form) return;
@@ -418,7 +374,6 @@
     });
   });
 
-  /* ── Helpers ── */
   function closeDD(idx) { var d = document.getElementById("ac-drop-" + idx); if (d) { d.style.display="none"; d.innerHTML=""; } }
   function renumber()   { document.querySelectorAll("#billing-items-tbody tr").forEach(function(tr,i){ var td=tr.querySelector("td:first-child"); if(td) td.textContent=i+1; }); }
   function r2(n)        { return Math.round(n*100)/100; }

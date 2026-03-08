@@ -45,6 +45,7 @@ public class BillingService {
         billing.setBillNumber(generateBillNumber(pharmacyId));
         billing.setPatientName(form.getPatientName());
         billing.setPatientPhone(form.getPatientPhone());
+        billing.setNotes(form.getNotes());
         billing.setCreatedAt(LocalDateTime.now());
         billing.setCreatedBy(createdBy);
         billing.setPharmacy(pharmacy);

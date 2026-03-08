@@ -2,6 +2,7 @@ package com.myspringboot.SpringBootApp.controller;
 
 import com.myspringboot.SpringBootApp.Service.BillingService;
 import com.myspringboot.SpringBootApp.Service.MedicineService;
+import com.myspringboot.SpringBootApp.Service.TenantPharmacyService;
 import com.myspringboot.SpringBootApp.dto.BillingForm;
 import com.myspringboot.SpringBootApp.model.Billing;
 import com.myspringboot.SpringBootApp.model.Medicine;
@@ -25,6 +26,7 @@ public class BillingController {
 
     @Autowired private BillingService billingService;
     @Autowired private MedicineService medicineService;
+    @Autowired private TenantPharmacyService tenantPharmacyService;
 
     // ── Guard helper ──────────────────────────────────────────────────
 
@@ -99,6 +101,7 @@ public class BillingController {
 
         model.addAttribute("billing",     billing.get());
         model.addAttribute("currentUser", user);
+        model.addAttribute("pharmacy",    tenantPharmacyService.getCurrentPharmacy());
         return "pages/billing_view";
     }
 
