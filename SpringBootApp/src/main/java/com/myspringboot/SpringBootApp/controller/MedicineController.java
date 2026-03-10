@@ -48,21 +48,17 @@ public class MedicineController {
 
         model.addAttribute("medicines",
                 medicineService.searchMedicines(id, name, description, type, medicineCode));
-        model.addAttribute("types",               MedicineType.values());
-        model.addAttribute("searchId",            id);
-        model.addAttribute("searchName",          name);
-        model.addAttribute("searchDescription",   description);
-        model.addAttribute("searchType",          type);
-        model.addAttribute("searchMedicineCode",  medicineCode);
-        model.addAttribute("currentUser",         user);
+        model.addAttribute("types",              MedicineType.values());
+        model.addAttribute("searchId",           id);
+        model.addAttribute("searchName",         name);
+        model.addAttribute("searchDescription",  description);
+        model.addAttribute("searchType",         type);
+        model.addAttribute("searchMedicineCode", medicineCode);
+        model.addAttribute("currentUser",        user);
+        model.addAttribute("activePage",         "medicines");
 
-        // Profit summary for the top-of-page analytics strip
-        model.addAttribute("totalCostValue",     medicineService.getTotalInventoryCostValue());
-        model.addAttribute("totalSellingValue",  medicineService.getTotalInventorySellingValue());
-        model.addAttribute("potentialProfit",    medicineService.getPotentialInventoryProfit());
-        model.addAttribute("negativeMarginCount",medicineService.getNegativeMarginCount());
-
-        model.addAttribute("activePage", "medicines");
+        // ── Analytics cards removed from here —
+        //    They now live on /sales-analytics (SalesAnalyticsController)
         return "pages/show_medicine";
     }
 
@@ -133,7 +129,7 @@ public class MedicineController {
                                  RedirectAttributes ra) {
         if (!canManageMedicines(session, ra)) return "redirect:/medicine/show";
         try {
-            medicineService.getMedicineById(id);   // existence check
+            medicineService.getMedicineById(id);
         } catch (IllegalArgumentException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
             return "redirect:/medicine/show";
