@@ -3,33 +3,31 @@ package com.myspringboot.SpringBootApp.dto;
 import java.math.BigDecimal;
 
 /**
- * Immutable projection returned by the analytics queries.
- * One row = one medicine with its aggregated sales figures.
+ * Projection returned by BillingRepository analytics queries.
+ *
+ * Revenue = SUM(bi.quantity × bi.unitPrice)
+ * Profit  = SUM(bi.quantity × (m.price − m.purchasePrice))
+ *           joined via bi.medicine → Medicine.price / Medicine.purchasePrice
  */
 public class SalesAnalyticsResult {
 
-    private final Long   medicineId;
-    private final String medicineName;
-    private final Long   totalQuantity;
+    private final String     medicineName;
+    private final long       totalQuantity;
     private final BigDecimal totalRevenue;
     private final BigDecimal totalProfit;
 
-    /** JPQL constructor expression — parameter order must match exactly. */
-    public SalesAnalyticsResult(Long   medicineId,
-                                String medicineName,
-                                Long   totalQuantity,
+    public SalesAnalyticsResult(String medicineName,
+                                Long totalQuantity,
                                 BigDecimal totalRevenue,
                                 BigDecimal totalProfit) {
-        this.medicineId    = medicineId;
         this.medicineName  = medicineName;
-        this.totalQuantity = totalQuantity != null ? totalQuantity : 0L;
-        this.totalRevenue  = totalRevenue  != null ? totalRevenue  : BigDecimal.ZERO;
-        this.totalProfit   = totalProfit   != null ? totalProfit   : BigDecimal.ZERO;
+        this.totalQuantity = totalQuantity  != null ? totalQuantity  : 0L;
+        this.totalRevenue  = totalRevenue   != null ? totalRevenue   : BigDecimal.ZERO;
+        this.totalProfit   = totalProfit    != null ? totalProfit    : BigDecimal.ZERO;
     }
 
-    public Long       getMedicineId()   { return medicineId;   }
-    public String     getMedicineName() { return medicineName; }
-    public Long       getTotalQuantity(){ return totalQuantity;}
-    public BigDecimal getTotalRevenue() { return totalRevenue; }
-    public BigDecimal getTotalProfit()  { return totalProfit;  }
+    public String     getMedicineName()  { return medicineName;  }
+    public long       getTotalQuantity() { return totalQuantity; }
+    public BigDecimal getTotalRevenue()  { return totalRevenue;  }
+    public BigDecimal getTotalProfit()   { return totalProfit;   }
 }
