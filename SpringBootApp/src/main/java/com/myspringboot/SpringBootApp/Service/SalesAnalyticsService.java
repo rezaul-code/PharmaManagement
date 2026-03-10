@@ -1,5 +1,6 @@
 package com.myspringboot.SpringBootApp.Service;
 
+import com.myspringboot.SpringBootApp.dto.MonthlyTrendResult;
 import com.myspringboot.SpringBootApp.dto.SalesAnalyticsResult;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +25,8 @@ public class SalesAnalyticsService {
     @Autowired
     private TenantPharmacyService tenantPharmacyService;
 
-    // ── Date range helpers ────────────────────────────────────────────────
+    // ── Date-range helpers ────────────────────────────────────────────────────
 
-    /** Returns start-of-day for N days ago. */
     private LocalDateTime daysAgo(int days) {
         return LocalDate.now().minusDays(days).atStartOfDay();
     }
@@ -35,7 +36,7 @@ public class SalesAnalyticsService {
             case "7d"  -> daysAgo(7);
             case "90d" -> daysAgo(90);
             case "1y"  -> daysAgo(365);
-            default    -> daysAgo(30);   // "30d" is the default
+            default    -> daysAgo(30);  // "30d"
         };
     }
 
@@ -43,10 +44,10 @@ public class SalesAnalyticsService {
         return LocalDate.now().plusDays(1).atStartOfDay();
     }
 
-    // ── Top-10 queries ────────────────────────────────────────────────────
+    // ── Top-10 medicines ──────────────────────────────────────────────────────
 
     /**
-     * Returns top 10 medicines for the given metric and period.
+     * Top 10 medicines sorted by the chosen metric for the given period.
      *
      * @param metric "quantity" | "revenue" | "profit"
      * @param period "7d" | "30d" | "90d" | "1y"
@@ -57,34 +58,34 @@ public class SalesAnalyticsService {
         LocalDateTime end        = endOfToday();
 
         List<SalesAnalyticsResult> raw = switch (metric) {
-            case "revenue" -> billingRepository.findTopByRevenue(pharmacyId, start, end);
-            case "profit"  -> billingRepository.findTopByProfit (pharmacyId, start, end);
+            case "revenue" -> billingRepository.findTopByRevenue (pharmacyId, start, end);
+            case "profit"  -> billingRepository.findTopByProfit  (pharmacyId, start, end);
             default        -> billingRepository.findTopByQuantity(pharmacyId, start, end);
         };
 
         return raw.stream().limit(TOP_N).toList();
     }
 
-    // ── Summary stats ─────────────────────────────────────────────────────
+    // ── Period-wide summary stat cards ───────────────────────────────────────
 
     /**
      * Totals across ALL medicines (not just top-10) for the period.
-     * Used in the stat cards at the top of the page.
+     * Keys: totalRevenue, totalProfit, totalQuantity, totalMedicines
      */
     public Map<String, BigDecimal> getSummary(String period) {
         Long          pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         LocalDateTime start      = startOf(period);
         LocalDateTime end        = endOfToday();
 
-        // Re-use the quantity query — it returns every medicine; we just aggregate
+        // Re-use quantity query — it returns every medicine with sales
         List<SalesAnalyticsResult> all =
                 billingRepository.findTopByQuantity(pharmacyId, start, end);
 
-        BigDecimal totalRevenue  = all.stream()
+        BigDecimal totalRevenue = all.stream()
                 .map(SalesAnalyticsResult::getTotalRevenue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalProfit   = all.stream()
+        BigDecimal totalProfit = all.stream()
                 .map(SalesAnalyticsResult::getTotalProfit)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -93,18 +94,19 @@ public class SalesAnalyticsService {
                 .sum();
 
         Map<String, BigDecimal> summary = new LinkedHashMap<>();
-        summary.put("totalRevenue",  totalRevenue);
-        summary.put("totalProfit",   totalProfit);
-        summary.put("totalQuantity", BigDecimal.valueOf(totalQty));
-        summary.put("totalMedicines",BigDecimal.valueOf(all.size()));
+        summary.put("totalRevenue",   totalRevenue);
+        summary.put("totalProfit",    totalProfit);
+        summary.put("totalQuantity",  BigDecimal.valueOf(totalQty));
+        summary.put("totalMedicines", BigDecimal.valueOf(all.size()));
         return summary;
     }
 
-    // ── Daily revenue trend (for line chart) ─────────────────────────────
+    // ── Daily revenue trend ───────────────────────────────────────────────────
 
     /**
-     * Returns a map of { "YYYY-MM-DD" → revenue } ordered by date.
-     * Used to render the daily revenue trend line chart.
+     * Map of { "YYYY-MM-DD" → daily revenue } ordered by date.
+     * Used by the small "Daily Revenue Trend" line chart.
+     * Uses b.createdAt (confirmed field on Billing entity).
      */
     public Map<String, BigDecimal> getDailyRevenueTrend(String period) {
         Long          pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
@@ -116,10 +118,57 @@ public class SalesAnalyticsService {
 
         Map<String, BigDecimal> trend = new LinkedHashMap<>();
         for (Object[] row : rows) {
-            String     day     = row[0].toString();   // DATE string
+            String     day     = row[0].toString();
             BigDecimal revenue = (BigDecimal) row[1];
             trend.put(day, revenue);
         }
         return trend;
+    }
+
+    // ── Monthly sales trend  (NEW) ────────────────────────────────────────────
+
+    /**
+     * Returns one {@link MonthlyTrendResult} per calendar month for the
+     * last {@code months} months (6 or 12), ordered oldest → newest.
+     *
+     * <p>Revenue  = SUM(bi.quantity × bi.unitPrice)
+     * <p>Profit   = SUM(bi.quantity × (m.price − m.purchasePrice))
+     *               — NULLs handled by COALESCE in the repository query
+     * <p>Units    = SUM(bi.quantity)
+     *
+     * @param months 6 or 12 (anything else is treated as 6)
+     */
+    public List<MonthlyTrendResult> getMonthlyTrend(int months) {
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+
+        // Start from the 1st of the month N months ago
+        LocalDateTime start = LocalDate.now()
+                                       .minusMonths(months)
+                                       .withDayOfMonth(1)
+                                       .atStartOfDay();
+        LocalDateTime end   = endOfToday();
+
+        List<Object[]> rows =
+                billingRepository.findMonthlyRevenue(pharmacyId, start, end);
+
+        // Short month names indexed 1–12
+        final String[] MONTH_NAMES = {
+            "", "Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"
+        };
+
+        List<MonthlyTrendResult> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            int        yr      = ((Number) row[0]).intValue();
+            int        mo      = ((Number) row[1]).intValue();
+            // COALESCE in SQL ensures these are never null, but guard anyway
+            BigDecimal revenue = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
+            BigDecimal profit  = row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO;
+            long       units   = row[4] != null ? ((Number) row[4]).longValue() : 0L;
+
+            String label = MONTH_NAMES[mo] + " " + yr;  // e.g. "Mar 2025"
+            result.add(new MonthlyTrendResult(label, revenue, profit, units));
+        }
+        return result;
     }
 }
