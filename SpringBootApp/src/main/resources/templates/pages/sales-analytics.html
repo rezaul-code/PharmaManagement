@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sales Analytics — PharmaManagement</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
-  <!-- Chart.js from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    /* ── Filter bar ─────────────────────────────────────────────── */
+    /* ── Filter bar ──────────────────────────────────────────────────── */
     .filter-bar {
       display: flex;
       align-items: center;
@@ -38,18 +37,37 @@
       color: #fff;
     }
     .filter-sep {
-      width: 1px;
-      height: 28px;
+      width: 1px; height: 28px;
       background: var(--border, #e2e8f0);
       margin: 0 4px;
     }
 
-    /* ── Summary stat cards ─────────────────────────────────────── */
-    .analytics-stat-grid {
+    /* ── Section label ───────────────────────────────────────────────── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-muted, #64748b);
+      margin: 0 0 12px;
+      padding-left: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border, #e2e8f0);
+    }
+
+    /* ── Stat card grid ─────────────────────────────────────────────── */
+    .analytics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 8px;
     }
     .analytics-stat {
       background: #fff;
@@ -84,7 +102,7 @@
       margin-top: 3px;
     }
 
-    /* ── Chart containers ───────────────────────────────────────── */
+    /* ── Chart containers ────────────────────────────────────────────── */
     .chart-card {
       background: #fff;
       border: 1.5px solid var(--border, #e2e8f0);
@@ -102,18 +120,15 @@
     }
     .chart-wrap {
       position: relative;
-      height: 320px;
+      height: 300px;
     }
 
-    /* ── Table ──────────────────────────────────────────────────── */
+    /* ── Table helpers ───────────────────────────────────────────────── */
     .rank-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      display: inline-flex; align-items: center; justify-content: center;
       width: 26px; height: 26px;
       border-radius: 50%;
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 12px; font-weight: 800;
     }
     .rank-1 { background: #fef3c7; color: #b45309; }
     .rank-2 { background: #f1f5f9; color: #475569; }
@@ -121,28 +136,23 @@
     .rank-n { background: #f8fafc; color: #94a3b8; }
 
     .progress-bar-wrap {
-      height: 6px;
-      background: #f1f5f9;
-      border-radius: 99px;
-      margin-top: 4px;
-      min-width: 80px;
+      height: 6px; background: #f1f5f9;
+      border-radius: 99px; margin-top: 4px; min-width: 80px;
     }
     .progress-bar-fill {
-      height: 100%;
-      border-radius: 99px;
+      height: 100%; border-radius: 99px;
       background: linear-gradient(90deg, #0ea5e9, #38bdf8);
       transition: width .4s ease;
     }
     .progress-bar-fill.profit  { background: linear-gradient(90deg, #10b981, #34d399); }
     .progress-bar-fill.revenue { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
 
-    /* ── Empty state ────────────────────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────────────────── */
     .empty-state {
-      text-align: center;
-      padding: 60px 20px;
+      text-align: center; padding: 60px 20px;
       color: var(--text-muted, #94a3b8);
     }
-    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state-icon  { font-size: 48px; margin-bottom: 12px; }
     .empty-state-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text, #1e293b); }
     .empty-state-sub   { font-size: 13px; }
   </style>
@@ -153,22 +163,92 @@
 
 <div class="main-wrapper">
 
-  <!-- ── Topbar ──────────────────────────────────────────────────────── -->
+  <!-- ── Topbar ───────────────────────────────────────────────────────── -->
   <div class="topbar">
     <div class="topbar-title">
       Sales Analytics
-      <small>Top selling medicines performance overview</small>
+      <small>Inventory health and top selling medicines</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/medicine/show" class="topbar-btn btn-outline">💊 All Medicines</a>
     </div>
   </div>
 
   <div class="page-content">
 
-    <!-- ── Filter bar ──────────────────────────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════════════════
+         SECTION 1 — INVENTORY ANALYTICS (moved from All Medicines page)
+         ════════════════════════════════════════════════════════════════ -->
+    <p class="section-label">📦 Inventory Overview</p>
+    <div class="analytics-grid" style="margin-bottom:24px">
+
+      <!-- Inventory Cost -->
+      <div class="analytics-stat">
+        <div class="analytics-stat-icon" style="background:#fef3c7">📦</div>
+        <div class="analytics-stat-label">Inventory Cost</div>
+        <div class="analytics-stat-value">
+          ₹<span th:text="${#numbers.formatDecimal(totalCostValue, 1, 2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub">At purchase price × stock</div>
+      </div>
+
+      <!-- Selling Value -->
+      <div class="analytics-stat">
+        <div class="analytics-stat-icon" style="background:#dcfce7">🏷️</div>
+        <div class="analytics-stat-label">Selling Value</div>
+        <div class="analytics-stat-value">
+          ₹<span th:text="${#numbers.formatDecimal(totalSellingValue, 1, 2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub">At selling price × stock</div>
+      </div>
+
+      <!-- Potential Profit -->
+      <div class="analytics-stat"
+           th:style="'background:#fff;border-radius:12px;padding:18px 20px;border:1.5px solid '
+                     + (${potentialProfit != null and potentialProfit.signum() >= 0}
+                        ? '#bbf7d0' : '#fecaca')">
+        <div class="analytics-stat-icon"
+             th:style="'border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;background:'
+                       + (${potentialProfit != null and potentialProfit.signum() >= 0}
+                          ? '#dcfce7' : '#fee2e2')"
+             th:text="${potentialProfit != null and potentialProfit.signum() >= 0} ? '📈' : '📉'">📈</div>
+        <div class="analytics-stat-label">Potential Profit</div>
+        <div class="analytics-stat-value"
+             th:style="'font-size:22px;font-weight:800;line-height:1.1;color:'
+                       + (${potentialProfit != null and potentialProfit.signum() >= 0}
+                          ? '#15803d' : '#dc2626')">
+          ₹<span th:text="${#numbers.formatDecimal(potentialProfit, 1, 2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub">If all current stock is sold</div>
+      </div>
+
+      <!-- Below Cost Alert -->
+      <div class="analytics-stat"
+           th:style="'background:#fff;border-radius:12px;padding:18px 20px;border:1.5px solid '
+                     + (${negativeMarginCount > 0} ? '#fecaca' : '#e2e8f0')">
+        <div class="analytics-stat-icon"
+             th:style="'border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;background:'
+                       + (${negativeMarginCount > 0} ? '#fee2e2' : '#f1f5f9')">⚠️</div>
+        <div class="analytics-stat-label"
+             th:style="'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:'
+                       + (${negativeMarginCount > 0} ? '#991b1b' : '#64748b')">
+          Below Cost
+        </div>
+        <div class="analytics-stat-value"
+             th:style="'font-size:22px;font-weight:800;line-height:1.1;color:'
+                       + (${negativeMarginCount > 0} ? '#dc2626' : '#1e293b')"
+             th:text="${negativeMarginCount}">0</div>
+        <div class="analytics-stat-sub">Medicines sold below purchase</div>
+      </div>
+
+    </div>
+    <!-- /Inventory Overview -->
+
+    <!-- ── Filter bar ────────────────────────────────────────────────── -->
     <div class="card mb-4">
       <div class="card-body" style="padding:14px 20px">
         <div class="filter-bar">
 
-          <!-- Metric filter -->
           <span style="font-size:12px;font-weight:700;color:var(--text-muted);
                        text-transform:uppercase;letter-spacing:.5px">Sort by</span>
 
@@ -186,7 +266,6 @@
 
           <div class="filter-sep"></div>
 
-          <!-- Period filter -->
           <span style="font-size:12px;font-weight:700;color:var(--text-muted);
                        text-transform:uppercase;letter-spacing:.5px">Period</span>
 
@@ -210,8 +289,11 @@
       </div>
     </div>
 
-    <!-- ── Summary stat cards ──────────────────────────────────────────── -->
-    <div class="analytics-stat-grid">
+    <!-- ════════════════════════════════════════════════════════════════
+         SECTION 2 — SALES SUMMARY CARDS (period-filtered)
+         ════════════════════════════════════════════════════════════════ -->
+    <p class="section-label">📊 Sales Performance</p>
+    <div class="analytics-grid" style="margin-bottom:24px">
 
       <!-- Total Revenue -->
       <div class="analytics-stat">
@@ -223,18 +305,18 @@
         <div class="analytics-stat-sub">Selling price × qty sold</div>
       </div>
 
-      <!-- Total Profit -->
+      <!-- Total Profit (sales) -->
       <div class="analytics-stat"
-           th:style="${summary['totalProfit'].signum() >= 0}
-                      ? 'background:#fff;border:1.5px solid #bbf7d0;border-radius:12px;padding:18px 20px'
-                      : 'background:#fff;border:1.5px solid #fecaca;border-radius:12px;padding:18px 20px'">
+           th:style="'background:#fff;border-radius:12px;padding:18px 20px;border:1.5px solid '
+                     + (${summary['totalProfit'].signum() >= 0} ? '#bbf7d0' : '#fecaca')">
         <div class="analytics-stat-icon"
-             th:style="${summary['totalProfit'].signum() >= 0} ? 'background:#dcfce7' : 'background:#fee2e2'">
-          <span th:text="${summary['totalProfit'].signum() >= 0} ? '📈' : '📉'">📈</span>
-        </div>
+             th:style="'border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;background:'
+                       + (${summary['totalProfit'].signum() >= 0} ? '#dcfce7' : '#fee2e2')"
+             th:text="${summary['totalProfit'].signum() >= 0} ? '📈' : '📉'">📈</div>
         <div class="analytics-stat-label">Total Profit</div>
         <div class="analytics-stat-value"
-             th:style="${summary['totalProfit'].signum() >= 0} ? 'color:#15803d' : 'color:#dc2626'">
+             th:style="'font-size:22px;font-weight:800;line-height:1.1;color:'
+                       + (${summary['totalProfit'].signum() >= 0} ? '#15803d' : '#dc2626')">
           ₹<span th:text="${#numbers.formatDecimal(summary['totalProfit'], 1, 2)}">0.00</span>
         </div>
         <div class="analytics-stat-sub">(Selling − Purchase) × qty</div>
@@ -259,19 +341,24 @@
       </div>
 
     </div>
+    <!-- /Sales Performance -->
 
-    <!-- ── Charts row ───────────────────────────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════════════════
+         SECTION 3 — CHARTS
+         ════════════════════════════════════════════════════════════════ -->
+    <p class="section-label">📉 Charts</p>
     <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px;margin-bottom:24px"
          th:if="${!#lists.isEmpty(topMedicines)}">
 
-      <!-- Bar chart: top 10 by selected metric -->
+      <!-- Bar chart -->
       <div class="chart-card">
         <div class="chart-card-title">
           <span th:text="${metric == 'revenue'} ? '💰 Top 10 by Revenue' :
                           (${metric == 'profit'} ? '📈 Top 10 by Profit' :
                           '📦 Top 10 by Quantity Sold')">Top 10</span>
           <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400"
-                th:text="'Last ' + ${period == '7d' ? '7 days' : period == '30d' ? '30 days' :
+                th:text="'Last ' + ${period == '7d' ? '7 days' :
+                          period == '30d' ? '30 days' :
                           period == '90d' ? '90 days' : '1 year'}">period</span>
         </div>
         <div class="chart-wrap">
@@ -279,12 +366,13 @@
         </div>
       </div>
 
-      <!-- Line chart: daily revenue trend -->
+      <!-- Line chart -->
       <div class="chart-card">
         <div class="chart-card-title">
           📅 Daily Revenue Trend
           <span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400"
-                th:text="'Last ' + ${period == '7d' ? '7 days' : period == '30d' ? '30 days' :
+                th:text="'Last ' + ${period == '7d' ? '7 days' :
+                          period == '30d' ? '30 days' :
                           period == '90d' ? '90 days' : '1 year'}">period</span>
         </div>
         <div class="chart-wrap">
@@ -294,11 +382,14 @@
 
     </div>
 
-    <!-- ── Results table ────────────────────────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════════════════
+         SECTION 4 — TOP 10 TABLE
+         ════════════════════════════════════════════════════════════════ -->
+    <p class="section-label">🏆 Rankings</p>
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          🏆 Top 10 Medicines —
+          Top 10 Medicines —
           <span th:text="${metric == 'revenue'} ? 'by Revenue' :
                           (${metric == 'profit'} ? 'by Profit' : 'by Quantity Sold')">by Qty</span>
         </div>
@@ -311,8 +402,9 @@
         <div class="empty-state-icon">📊</div>
         <div class="empty-state-title">No sales data yet</div>
         <div class="empty-state-sub">
-          Create some bills first and the analytics will appear here.
-          <a href="/billing/new" style="color:var(--primary);font-weight:600">Create a bill →</a>
+          Create some bills first and analytics will appear here.
+          <a href="/billing/new"
+             style="color:var(--primary);font-weight:600">Create a bill →</a>
         </div>
       </div>
 
@@ -332,15 +424,11 @@
             </tr>
           </thead>
           <tbody>
-
-            <!-- Pre-compute max for progress bar in JS — Thymeleaf can't easily do this,
-                 so we embed it as a data attribute and let JS fill the bars -->
             <tr th:each="r, i : ${topMedicines}"
                 th:attr="data-qty=${r.totalQuantity},
                          data-revenue=${r.totalRevenue},
                          data-profit=${r.totalProfit}">
 
-              <!-- Rank -->
               <td>
                 <span class="rank-badge"
                       th:classappend="${i.index == 0} ? ' rank-1' :
@@ -349,43 +437,35 @@
                       th:text="${i.count}">1</span>
               </td>
 
-              <!-- Medicine name -->
-              <td>
-                <span style="font-weight:600;color:var(--text)"
-                      th:text="${r.medicineName}">Medicine</span>
-              </td>
+              <td style="font-weight:600;color:var(--text)"
+                  th:text="${r.medicineName}">Medicine</td>
 
-              <!-- Quantity -->
               <td class="num">
                 <span style="font-weight:700;font-family:var(--font-mono,monospace)"
                       th:text="${r.totalQuantity}">0</span>
                 <div style="font-size:11px;color:var(--text-muted)">units</div>
               </td>
 
-              <!-- Revenue -->
               <td class="num"
-                  style="font-family:var(--font-mono,monospace);color:#7c3aed;font-weight:700">
-                ₹<span th:text="${#numbers.formatDecimal(r.totalRevenue, 1, 2)}">0.00</span>
+                  style="font-family:var(--font-mono,monospace);
+                         color:#7c3aed;font-weight:700">
+                ₹<span th:text="${#numbers.formatDecimal(r.totalRevenue,1,2)}">0.00</span>
               </td>
 
-              <!-- Profit -->
               <td class="num">
                 <span style="font-family:var(--font-mono,monospace);font-weight:700"
-                      th:style="${r.totalProfit.signum() >= 0}
-                                  ? 'font-family:var(--font-mono,monospace);font-weight:700;color:#15803d'
-                                  : 'font-family:var(--font-mono,monospace);font-weight:700;color:#dc2626'">
+                      th:style="'font-family:var(--font-mono,monospace);font-weight:700;color:'
+                                + (${r.totalProfit.signum() >= 0} ? '#15803d' : '#dc2626')">
                   <span th:text="${r.totalProfit.signum() >= 0} ? '▲' : '▼'">▲</span>
-                  ₹<span th:text="${#numbers.formatDecimal(r.totalProfit.abs(), 1, 2)}">0.00</span>
+                  ₹<span th:text="${#numbers.formatDecimal(r.totalProfit.abs(),1,2)}">0.00</span>
                 </span>
               </td>
 
-              <!-- Progress bar (filled by JS) -->
               <td>
                 <div class="progress-bar-wrap">
                   <div class="progress-bar-fill"
                        th:classappend="${metric == 'profit'} ? ' profit' :
                                        (${metric == 'revenue'} ? ' revenue' : '')"
-                       th:attr="data-metric=${metric}"
                        style="width:0%"></div>
                 </div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:3px"
@@ -398,26 +478,22 @@
       </div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /page-content -->
+</div><!-- /main-wrapper -->
 
-<!-- ── Chart.js + progress bar script ──────────────────────────────── -->
 <script th:inline="javascript">
 /*<![CDATA[*/
-
-// ── Data injected from controller ──────────────────────────────────────
 const CHART_LABELS = /*[[${chartLabels}]]*/ [];
 const CHART_VALUES = /*[[${chartValues}]]*/ [];
 const TREND_LABELS = /*[[${trendLabels}]]*/ [];
 const TREND_VALUES = /*[[${trendValues}]]*/ [];
 const METRIC       = /*[[${metric}]]*/ 'quantity';
 
-// ── Shared Chart.js defaults ────────────────────────────────────────────
-Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
 Chart.defaults.font.size   = 12;
 Chart.defaults.color       = '#64748b';
 
-// ── BAR CHART ───────────────────────────────────────────────────────────
+// ── Bar chart ───────────────────────────────────────────────────────────
 (function () {
   const ctx = document.getElementById('barChart');
   if (!ctx || !CHART_LABELS.length) return;
@@ -427,8 +503,7 @@ Chart.defaults.color       = '#64748b';
     revenue:  { bg: 'rgba(139,92,246,.75)',  border: '#8b5cf6' },
     profit:   { bg: 'rgba(16,185,129,.75)',  border: '#10b981' },
   };
-  const c = colors[METRIC] || colors.quantity;
-
+  const c      = colors[METRIC] || colors.quantity;
   const yLabel = METRIC === 'revenue' ? 'Revenue (₹)'
                : METRIC === 'profit'  ? 'Profit (₹)'
                : 'Units Sold';
@@ -450,17 +525,14 @@ Chart.defaults.color       = '#64748b';
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      indexAxis: 'y',   // horizontal bars — better for long medicine names
+      indexAxis: 'y',
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.x;
-              return METRIC === 'quantity'
-                ? ` ${v} units`
-                : ` ₹${v.toFixed(2)}`;
-            }
+            label: ctx => METRIC === 'quantity'
+              ? ` ${ctx.parsed.x} units`
+              : ` ₹${ctx.parsed.x.toFixed(2)}`
           }
         }
       },
@@ -468,15 +540,15 @@ Chart.defaults.color       = '#64748b';
         x: {
           grid: { color: 'rgba(0,0,0,.05)' },
           ticks: {
-            callback: v =>
-              METRIC === 'quantity' ? v : '₹' + v.toLocaleString('en-IN')
+            callback: v => METRIC === 'quantity'
+              ? v
+              : '₹' + v.toLocaleString('en-IN')
           }
         },
         y: {
           grid: { display: false },
           ticks: {
-            // Truncate long names on the axis
-            callback: function(val) {
+            callback: function (val) {
               const label = this.getLabelForValue(val);
               return label.length > 18 ? label.slice(0, 16) + '…' : label;
             }
@@ -487,7 +559,7 @@ Chart.defaults.color       = '#64748b';
   });
 })();
 
-// ── LINE CHART ──────────────────────────────────────────────────────────
+// ── Line chart ──────────────────────────────────────────────────────────
 (function () {
   const ctx = document.getElementById('lineChart');
   if (!ctx || !TREND_LABELS.length) return;
@@ -522,16 +594,11 @@ Chart.defaults.color       = '#64748b';
       scales: {
         x: {
           grid: { display: false },
-          ticks: {
-            maxTicksLimit: 8,
-            maxRotation: 0,
-          }
+          ticks: { maxTicksLimit: 8, maxRotation: 0 }
         },
         y: {
           grid: { color: 'rgba(0,0,0,.05)' },
-          ticks: {
-            callback: v => '₹' + v.toLocaleString('en-IN')
-          }
+          ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }
         }
       }
     }
@@ -543,7 +610,6 @@ Chart.defaults.color       = '#64748b';
   const rows = document.querySelectorAll('tbody tr[data-qty]');
   if (!rows.length) return;
 
-  // Find max value for the current metric to calculate percentages
   let max = 0;
   rows.forEach(row => {
     const v = METRIC === 'revenue' ? parseFloat(row.dataset.revenue || 0)
@@ -553,19 +619,16 @@ Chart.defaults.color       = '#64748b';
   });
 
   rows.forEach(row => {
-    const v = METRIC === 'revenue' ? parseFloat(row.dataset.revenue || 0)
-            : METRIC === 'profit'  ? parseFloat(row.dataset.profit  || 0)
-            :                        parseFloat(row.dataset.qty     || 0);
-
+    const v   = METRIC === 'revenue' ? parseFloat(row.dataset.revenue || 0)
+              : METRIC === 'profit'  ? parseFloat(row.dataset.profit  || 0)
+              :                        parseFloat(row.dataset.qty     || 0);
     const pct   = max > 0 ? Math.round((v / max) * 100) : 0;
     const bar   = row.querySelector('.progress-bar-fill');
     const label = row.querySelector('.pct-label');
-
-    if (bar)   bar.style.width = pct + '%';
-    if (label) label.textContent = pct + '%';
+    if (bar)   bar.style.width    = pct + '%';
+    if (label) label.textContent  = pct + '%';
   });
 })();
-
 /*]]>*/
 </script>
 

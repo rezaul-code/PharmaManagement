@@ -1,5 +1,6 @@
 package com.myspringboot.SpringBootApp.controller;
 
+import com.myspringboot.SpringBootApp.Service.MedicineService;
 import com.myspringboot.SpringBootApp.Service.SalesAnalyticsService;
 import com.myspringboot.SpringBootApp.dto.SalesAnalyticsResult;
 import jakarta.servlet.http.HttpSession;
@@ -19,6 +20,9 @@ public class SalesAnalyticsController {
     @Autowired
     private SalesAnalyticsService salesAnalyticsService;
 
+    @Autowired
+    private MedicineService medicineService;   // ← for inventory analytics cards
+
     /**
      * GET /sales-analytics
      *
@@ -36,7 +40,7 @@ public class SalesAnalyticsController {
         Object user = session.getAttribute("loggedInUser");
         if (user == null) return "redirect:/login";
 
-        // ── Data ─────────────────────────────────────────────────────────
+        // ── Sales analytics data (charts + top-10 table) ─────────────────
         List<SalesAnalyticsResult> topMedicines =
                 salesAnalyticsService.getTopMedicines(metric, period);
 
@@ -46,9 +50,13 @@ public class SalesAnalyticsController {
         Map<String, BigDecimal> dailyTrend =
                 salesAnalyticsService.getDailyRevenueTrend(period);
 
-        // ── Chart data as JSON-safe strings ──────────────────────────────
-        // Labels  → ["Medicine A","Medicine B", ...]
-        // Values  → [120, 95, ...]
+        // ── Inventory analytics cards (moved from All Medicines page) ─────
+        BigDecimal totalCostValue    = medicineService.getTotalInventoryCostValue();
+        BigDecimal totalSellingValue = medicineService.getTotalInventorySellingValue();
+        BigDecimal potentialProfit   = medicineService.getPotentialInventoryProfit();
+        long negativeMarginCount     = medicineService.getNegativeMarginCount();
+
+        // ── Chart data as JSON-safe strings for Chart.js ──────────────────
         StringBuilder chartLabels = new StringBuilder("[");
         StringBuilder chartValues = new StringBuilder("[");
 
@@ -56,7 +64,7 @@ public class SalesAnalyticsController {
             SalesAnalyticsResult r = topMedicines.get(i);
             String name = r.getMedicineName()
                            .replace("\"", "\\\"")
-                           .replace("'", "\\'");
+                           .replace("'",  "\\'");
 
             chartLabels.append("\"").append(name).append("\"");
 
@@ -89,15 +97,23 @@ public class SalesAnalyticsController {
         trendValues.append("]");
 
         // ── Model ─────────────────────────────────────────────────────────
-        model.addAttribute("topMedicines",   topMedicines);
-        model.addAttribute("summary",        summary);
-        model.addAttribute("metric",         metric);
-        model.addAttribute("period",         period);
-        model.addAttribute("chartLabels",    chartLabels.toString());
-        model.addAttribute("chartValues",    chartValues.toString());
-        model.addAttribute("trendLabels",    trendLabels.toString());
-        model.addAttribute("trendValues",    trendValues.toString());
-        model.addAttribute("activePage",     "sales-analytics");
+        // Sales analytics
+        model.addAttribute("topMedicines",  topMedicines);
+        model.addAttribute("summary",       summary);
+        model.addAttribute("metric",        metric);
+        model.addAttribute("period",        period);
+        model.addAttribute("chartLabels",   chartLabels.toString());
+        model.addAttribute("chartValues",   chartValues.toString());
+        model.addAttribute("trendLabels",   trendLabels.toString());
+        model.addAttribute("trendValues",   trendValues.toString());
+
+        // Inventory analytics (relocated from All Medicines)
+        model.addAttribute("totalCostValue",      totalCostValue);
+        model.addAttribute("totalSellingValue",   totalSellingValue);
+        model.addAttribute("potentialProfit",     potentialProfit);
+        model.addAttribute("negativeMarginCount", negativeMarginCount);
+
+        model.addAttribute("activePage", "sales-analytics");
 
         return "pages/sales-analytics";
     }
