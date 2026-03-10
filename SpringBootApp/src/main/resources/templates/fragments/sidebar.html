@@ -7,7 +7,8 @@
      Set activePage in your controller:
        model.addAttribute("activePage", "dashboard");
      activePage values:
-       dashboard | medicines | add-medicine | new-bill | bill-history | staff | settings
+       dashboard | medicines | add-medicine | new-bill | bill-history |
+       sales-analytics | staff | settings
 ═══════════════════════════════════════════════════════════════════════ -->
 <aside class="sidebar" th:fragment="sidebar">
 
@@ -58,6 +59,14 @@
        th:classappend="${activePage == 'bill-history'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">📋</span> Bill History
+    </a>
+
+    <!-- ANALYTICS -->
+    <div class="nav-section-label">Analytics</div>
+    <a href="/sales-analytics"
+       th:classappend="${activePage == 'sales-analytics'} ? ' active' : ''"
+       class="nav-item">
+      <span class="nav-icon">📊</span> Sales Analytics
     </a>
 
     <!-- STAFF + ADMIN — OWNER only -->
