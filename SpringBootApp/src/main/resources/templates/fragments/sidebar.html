@@ -3,11 +3,13 @@
 <body>
 
 <!-- ══ REUSABLE SIDEBAR FRAGMENT ══════════════════════════════════════
-     Usage: <div th:replace="~{fragments/sidebar :: sidebar(activePage='dashboard')}"></div>
-     activePage values: dashboard, medicines, add-medicine, new-bill,
-                        bill-history, staff, settings
+     Usage: <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+     Set activePage in your controller:
+       model.addAttribute("activePage", "dashboard");
+     activePage values:
+       dashboard | medicines | add-medicine | new-bill | bill-history | staff | settings
 ═══════════════════════════════════════════════════════════════════════ -->
-<aside class="sidebar" th:fragment="sidebar(activePage)">
+<aside class="sidebar" th:fragment="sidebar">
 
   <!-- Brand -->
   <div class="sidebar-brand">

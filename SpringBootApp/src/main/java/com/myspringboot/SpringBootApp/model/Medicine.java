@@ -43,6 +43,9 @@ public class Medicine {
 
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
+    
+    @Column(name = "medicine_code", unique = true, length = 20)
+    private String medicineCode;
 
     private String description;
 
@@ -94,6 +97,7 @@ public class Medicine {
     public void setPharmacy(Pharmacy pharmacy) { this.pharmacy = pharmacy; }
 
     public boolean isLowStock() {
-        return stockQuantity != null && stockQuantity <= 10;
-    }
+        return stockQuantity != null && stockQuantity <= 10;}
+    public String getMedicineCode() { return medicineCode; }
+    public void setMedicineCode(String medicineCode) { this.medicineCode = medicineCode; }
 }
