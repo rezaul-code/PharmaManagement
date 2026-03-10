@@ -18,15 +18,11 @@ public class MedicineController {
     @Autowired
     private MedicineService medicineService;
 
-    // ── Guard helper ──────────────────────────────────────────────────
+    // ── Guard helper ──────────────────────────────────────────────────────
 
-    /**
-     * Returns true if the session user is OWNER or PHARMACIST.
-     * Adds a flash error and returns false otherwise.
-     */
     private boolean canManageMedicines(HttpSession session, RedirectAttributes ra) {
         User user = (User) session.getAttribute("loggedInUser");
-        if (user == null) return false;                    // handled by redirect below
+        if (user == null) return false;
         if (!user.canManageMedicines()) {
             ra.addFlashAttribute("error",
                     "Access denied: only OWNER or PHARMACIST can manage medicines.");
@@ -35,9 +31,7 @@ public class MedicineController {
         return true;
     }
 
-    // ── READ (all roles) ──────────────────────────────────────────────
-
- // Replace the existing showMedicines method:
+    // ── READ (all roles) ──────────────────────────────────────────────────
 
     @GetMapping({"/medicine/show", "/show_medicine"})
     public String showMedicines(
@@ -45,7 +39,7 @@ public class MedicineController {
             @RequestParam(required = false) String       name,
             @RequestParam(required = false) String       description,
             @RequestParam(required = false) MedicineType type,
-            @RequestParam(required = false) String       medicineCode,   // ← NEW
+            @RequestParam(required = false) String       medicineCode,
             HttpSession session,
             Model model) {
 
@@ -54,17 +48,25 @@ public class MedicineController {
 
         model.addAttribute("medicines",
                 medicineService.searchMedicines(id, name, description, type, medicineCode));
-        model.addAttribute("types",                MedicineType.values());
-        model.addAttribute("searchId",             id);
-        model.addAttribute("searchName",           name);
-        model.addAttribute("searchDescription",    description);
-        model.addAttribute("searchType",           type);
-        model.addAttribute("searchMedicineCode",   medicineCode);        // ← NEW
-        model.addAttribute("currentUser",          user);
+        model.addAttribute("types",               MedicineType.values());
+        model.addAttribute("searchId",            id);
+        model.addAttribute("searchName",          name);
+        model.addAttribute("searchDescription",   description);
+        model.addAttribute("searchType",          type);
+        model.addAttribute("searchMedicineCode",  medicineCode);
+        model.addAttribute("currentUser",         user);
+
+        // Profit summary for the top-of-page analytics strip
+        model.addAttribute("totalCostValue",     medicineService.getTotalInventoryCostValue());
+        model.addAttribute("totalSellingValue",  medicineService.getTotalInventorySellingValue());
+        model.addAttribute("potentialProfit",    medicineService.getPotentialInventoryProfit());
+        model.addAttribute("negativeMarginCount",medicineService.getNegativeMarginCount());
+
+        model.addAttribute("activePage", "medicines");
         return "pages/show_medicine";
     }
 
-    // ── CREATE (OWNER + PHARMACIST only) ──────────────────────────────
+    // ── CREATE (OWNER + PHARMACIST only) ──────────────────────────────────
 
     @GetMapping({"/medicine/add", "/add_medicine"})
     public String showAddForm(HttpSession session, Model model, RedirectAttributes ra) {
@@ -77,6 +79,7 @@ public class MedicineController {
         }
         model.addAttribute("medicine", new Medicine());
         model.addAttribute("types", MedicineType.values());
+        model.addAttribute("activePage", "add-medicine");
         return "pages/add_medicine";
     }
 
@@ -86,10 +89,11 @@ public class MedicineController {
                                   RedirectAttributes ra) {
         if (!canManageMedicines(session, ra)) return "redirect:/medicine/show";
         medicineService.saveMedicine(medicine);
+        ra.addFlashAttribute("success", "Medicine added successfully.");
         return "redirect:/medicine/show";
     }
 
-    // ── EDIT (OWNER + PHARMACIST only) ────────────────────────────────
+    // ── EDIT (OWNER + PHARMACIST only) ────────────────────────────────────
 
     @GetMapping("/medicine/edit/{id}")
     public String showEditForm(@PathVariable Long id,
@@ -106,6 +110,7 @@ public class MedicineController {
         try {
             model.addAttribute("medicine", medicineService.getMedicineById(id));
             model.addAttribute("types", MedicineType.values());
+            model.addAttribute("activePage", "add-medicine");
             return "pages/med_edit";
         } catch (IllegalArgumentException ex) {
             ra.addFlashAttribute("error", ex.getMessage());
@@ -135,6 +140,7 @@ public class MedicineController {
         }
         medicine.setId(id);
         medicineService.saveMedicine(medicine);
+        ra.addFlashAttribute("success", "Medicine updated successfully.");
         return "redirect:/medicine/show";
     }
 
@@ -149,7 +155,7 @@ public class MedicineController {
         return updateMedicine(medicine.getId(), medicine, session, ra);
     }
 
-    // ── DELETE (OWNER + PHARMACIST only) ──────────────────────────────
+    // ── DELETE (OWNER + PHARMACIST only) ──────────────────────────────────
 
     @GetMapping("/medicine/delete/{id}")
     public String deleteMedicine(@PathVariable Long id,
@@ -158,6 +164,7 @@ public class MedicineController {
         if (!canManageMedicines(session, ra)) return "redirect:/medicine/show";
         try {
             medicineService.deleteMedicine(id);
+            ra.addFlashAttribute("success", "Medicine deleted successfully.");
         } catch (EmptyResultDataAccessException | IllegalArgumentException ex) {
             ra.addFlashAttribute("error", "Medicine not found with id: " + id);
         }

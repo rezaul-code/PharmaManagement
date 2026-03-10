@@ -8,10 +8,8 @@
 </head>
 <body>
 
-<!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
-<div th:replace="~{fragments/sidebar :: sidebar(activePage='medicines')}"></div>
+<div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
 <div class="main-wrapper">
   <div class="topbar">
     <div class="topbar-title">
@@ -27,230 +25,316 @@
   <div class="page-content">
 
     <!-- ── Flash messages ──────────────────────────────────────────────── -->
-    <div class="alert alert-danger" th:if="${error}">
-      ⚠️ <span th:text="${error}">Error</span>
-    </div>
-    <div class="alert alert-success" th:if="${success}">
-      ✅ <span th:text="${success}">Success</span>
-    </div>
+    <div class="alert alert-danger"  th:if="${error}"   th:text="'⚠️ ' + ${error}"></div>
+    <div class="alert alert-success" th:if="${success}" th:text="'✅ ' + ${success}"></div>
 
-    <!-- ── Search / Filter card ────────────────────────────────────────── -->
+    <!-- ── Profit Analytics Strip ──────────────────────────────────────── -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+                gap:16px;margin-bottom:24px">
+
+      <!-- Inventory Cost -->
+      <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;
+                  padding:16px 20px;display:flex;align-items:center;gap:14px">
+        <div style="width:42px;height:42px;border-radius:10px;background:#fef3c7;
+                    display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#92400e;
+                      text-transform:uppercase;letter-spacing:.5px">Inventory Cost</div>
+          <div style="font-size:20px;font-weight:800;color:#1e293b;margin-top:2px">
+            ₹<span th:text="${#numbers.formatDecimal(totalCostValue, 1, 2)}">0.00</span>
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">At purchase price</div>
+        </div>
+      </div>
+
+      <!-- Selling Value -->
+      <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;
+                  padding:16px 20px;display:flex;align-items:center;gap:14px">
+        <div style="width:42px;height:42px;border-radius:10px;background:#dcfce7;
+                    display:flex;align-items:center;justify-content:center;font-size:20px">🏷️</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#166534;
+                      text-transform:uppercase;letter-spacing:.5px">Selling Value</div>
+          <div style="font-size:20px;font-weight:800;color:#1e293b;margin-top:2px">
+            ₹<span th:text="${#numbers.formatDecimal(totalSellingValue, 1, 2)}">0.00</span>
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">At selling price</div>
+        </div>
+      </div>
+
+      <!-- Potential Profit -->
+      <div style="background:#fff;border-radius:12px;padding:16px 20px;
+                  display:flex;align-items:center;gap:14px"
+           th:style="'background:#fff;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px solid '
+                     + (${potentialProfit != null and potentialProfit.signum() >= 0} ? '#bbf7d0' : '#fecaca')">
+        <div style="width:42px;height:42px;border-radius:10px;
+                    display:flex;align-items:center;justify-content:center;font-size:20px"
+             th:style="'width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:'
+                       + (${potentialProfit != null and potentialProfit.signum() >= 0} ? '#dcfce7' : '#fee2e2')"
+             th:text="${potentialProfit != null and potentialProfit.signum() >= 0} ? '📈' : '📉'">📈</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px"
+               th:style="'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'
+                         + (${potentialProfit != null and potentialProfit.signum() >= 0} ? '#166534' : '#991b1b')">
+            Potential Profit
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-top:2px"
+               th:style="'font-size:20px;font-weight:800;margin-top:2px;color:'
+                         + (${potentialProfit != null and potentialProfit.signum() >= 0} ? '#15803d' : '#dc2626')">
+            ₹<span th:text="${#numbers.formatDecimal(potentialProfit, 1, 2)}">0.00</span>
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">If all stock is sold</div>
+        </div>
+      </div>
+
+      <!-- Below Cost Alert -->
+      <div style="background:#fff;border-radius:12px;padding:16px 20px;
+                  display:flex;align-items:center;gap:14px"
+           th:style="'background:#fff;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px solid '
+                     + (${negativeMarginCount > 0} ? '#fecaca' : '#e2e8f0')">
+        <div style="width:42px;height:42px;border-radius:10px;
+                    display:flex;align-items:center;justify-content:center;font-size:20px"
+             th:style="'width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:'
+                       + (${negativeMarginCount > 0} ? '#fee2e2' : '#f1f5f9')">⚠️</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px"
+               th:style="'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:'
+                         + (${negativeMarginCount > 0} ? '#991b1b' : '#475569')">
+            Below Cost
+          </div>
+          <div style="font-size:20px;font-weight:800;margin-top:2px"
+               th:style="'font-size:20px;font-weight:800;margin-top:2px;color:'
+                         + (${negativeMarginCount > 0} ? '#dc2626' : '#1e293b')"
+               th:text="${negativeMarginCount}">0</div>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">Selling below purchase</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- /Profit Analytics Strip -->
+
+    <!-- ── Search / Filter ─────────────────────────────────────────────── -->
     <div class="card mb-4">
       <div class="card-header">
-        <div class="card-title">🔍 Search & Filter</div>
+        <div class="card-title">🔍 Search &amp; Filter</div>
         <a href="/medicine/show" class="btn btn-sm btn-outline"
            style="border:1.5px solid var(--border);background:transparent;
-                  color:var(--text);font-size:12px">✕ Clear Filters</a>
+                  color:var(--text);font-size:12px">✕ Clear</a>
       </div>
       <div class="card-body">
         <form method="get" th:action="@{/medicine/show}">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;align-items:end">
-
-            <!-- ID -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+                      gap:16px;align-items:end">
             <div class="form-group mb-0">
               <label class="form-label">ID</label>
-              <input type="number" class="form-control"
-                     name="id" th:value="${searchId}"
-                     placeholder="e.g. 12" min="1" />
+              <input type="number" class="form-control" name="id"
+                     th:value="${searchId}" placeholder="e.g. 12" min="1" />
             </div>
-
-            <!-- Medicine Code  ← NEW -->
             <div class="form-group mb-0">
-              <label class="form-label">
-                Medicine Code
-                <span style="font-size:10px;font-weight:600;background:#eff6ff;
-                             color:#1d4ed8;padding:1px 6px;border-radius:4px;
-                             margin-left:4px">NEW</span>
-              </label>
-              <input type="text" class="form-control"
-                     name="medicineCode" th:value="${searchMedicineCode}"
-                     placeholder="e.g. MED-001"
+              <label class="form-label">Medicine Code</label>
+              <input type="text" class="form-control" name="medicineCode"
+                     th:value="${searchMedicineCode}" placeholder="MED-001"
                      style="font-family:var(--font-mono,monospace)" />
             </div>
-
-            <!-- Name -->
             <div class="form-group mb-0">
               <label class="form-label">Name</label>
-              <input type="text" class="form-control"
-                     name="name" th:value="${searchName}"
-                     placeholder="e.g. Paracetamol" />
+              <input type="text" class="form-control" name="name"
+                     th:value="${searchName}" placeholder="e.g. Paracetamol" />
             </div>
-
-            <!-- Description -->
             <div class="form-group mb-0">
               <label class="form-label">Description</label>
-              <input type="text" class="form-control"
-                     name="description" th:value="${searchDescription}"
-                     placeholder="Keyword…" />
+              <input type="text" class="form-control" name="description"
+                     th:value="${searchDescription}" placeholder="Keyword…" />
             </div>
-
-            <!-- Type -->
             <div class="form-group mb-0">
               <label class="form-label">Type</label>
               <select class="form-control" name="type">
                 <option value="">— All types —</option>
-                <option th:each="t : ${types}"
-                        th:value="${t}"
-                        th:text="${t}"
+                <option th:each="t : ${types}" th:value="${t}" th:text="${t}"
                         th:selected="${t == searchType}">TYPE</option>
               </select>
             </div>
-
-            <!-- Submit -->
-            <div class="form-group mb-0" style="display:flex;align-items:flex-end">
+            <div class="form-group mb-0">
               <button type="submit" class="btn btn-primary"
                       style="width:100%">🔍 Search</button>
             </div>
-
           </div>
         </form>
       </div>
     </div>
 
-    <!-- ── Results card ────────────────────────────────────────────────── -->
+    <!-- ── Results table ───────────────────────────────────────────────── -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">💊 Medicine List</div>
         <span style="font-size:12px;color:var(--text-muted)"
               th:text="${medicines.size()} + ' result(s)'">0 results</span>
       </div>
-
       <div class="table-wrap">
         <table class="pharma-table">
           <thead>
             <tr>
-              <th style="width:50px">#</th>
-
-              <!-- Medicine Code column  ← NEW -->
-              <th style="width:115px">
-                <span style="display:inline-flex;align-items:center;gap:5px">
-                  🏷 Code
-                </span>
-              </th>
-
+              <th>#</th>
+              <th>Code</th>
               <th>Name</th>
               <th>Type</th>
               <th>Manufacturer</th>
-              <th>Batch No</th>
-              <th class="num">Price (₹)</th>
+              <th>Batch</th>
+              <th class="num">Purchase (₹)</th>
+              <th class="num">Selling (₹)</th>
+              <th class="num">Profit (₹)</th>
+              <th class="num">Margin</th>
               <th class="num">GST %</th>
               <th class="num">Stock</th>
               <th>Expiry</th>
               <th th:if="${currentUser != null and currentUser.canManageMedicines()}">Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            <!-- Empty state -->
+
             <tr th:if="${#lists.isEmpty(medicines)}">
-              <td colspan="11"
-                  style="text-align:center;padding:48px 20px;color:var(--text-muted)">
+              <td colspan="14" style="text-align:center;padding:48px;color:var(--text-muted)">
                 <div style="font-size:32px;margin-bottom:8px">💊</div>
                 <div style="font-weight:600;margin-bottom:4px">No medicines found</div>
-                <div style="font-size:13px">Try adjusting your search filters or
-                  <a th:if="${currentUser != null and currentUser.canManageMedicines()}"
-                     href="/medicine/add"
-                     style="color:var(--primary);font-weight:600">add a new medicine →</a>
-                </div>
+                <a th:if="${currentUser != null and currentUser.canManageMedicines()}"
+                   href="/medicine/add"
+                   style="color:var(--primary);font-weight:600;font-size:13px">
+                  Add a new medicine →</a>
               </td>
             </tr>
 
-            <tr th:each="medicine, iStat : ${medicines}">
+            <tr th:each="m, i : ${medicines}">
 
-              <!-- Row number -->
+              <!-- # -->
               <td style="color:var(--text-muted);font-size:12px;font-weight:600"
-                  th:text="${iStat.count}">1</td>
+                  th:text="${i.count}">1</td>
 
-              <!-- Medicine Code  ← NEW -->
+              <!-- Code -->
               <td>
-                <span th:if="${medicine.medicineCode != null}"
-                      style="display:inline-block;font-family:var(--font-mono,monospace);
-                             font-size:12px;font-weight:700;
-                             background:#eff6ff;color:#1d4ed8;
-                             padding:3px 9px;border-radius:6px;
-                             border:1px solid #bfdbfe;white-space:nowrap;
-                             letter-spacing:.3px"
-                      th:text="${medicine.medicineCode}">MED-001</span>
-                <span th:if="${medicine.medicineCode == null}"
+                <span th:if="${m.medicineCode != null}"
+                      style="font-family:var(--font-mono,monospace);font-size:11px;
+                             font-weight:700;background:#eff6ff;color:#1d4ed8;
+                             padding:2px 8px;border-radius:5px;
+                             border:1px solid #bfdbfe;white-space:nowrap"
+                      th:text="${m.medicineCode}">MED-001</span>
+                <span th:if="${m.medicineCode == null}"
                       style="color:var(--text-muted);font-size:12px">—</span>
               </td>
 
               <!-- Name -->
-              <td>
-                <span style="font-weight:600;color:var(--text)"
-                      th:text="${medicine.name}">Name</span>
-              </td>
+              <td style="font-weight:600" th:text="${m.name}">—</td>
 
               <!-- Type -->
               <td>
-                <span th:if="${medicine.type != null}"
-                      class="badge badge-info"
-                      th:text="${medicine.type}">TYPE</span>
-                <span th:if="${medicine.type == null}"
+                <span th:if="${m.type != null}" class="badge badge-info"
+                      th:text="${m.type}">TYPE</span>
+                <span th:if="${m.type == null}"
                       style="color:var(--text-muted);font-size:12px">—</span>
               </td>
 
               <!-- Manufacturer -->
               <td style="color:var(--text-muted);font-size:13px"
-                  th:text="${medicine.manufacturer ?: '—'}">—</td>
+                  th:text="${m.manufacturer ?: '—'}">—</td>
 
-              <!-- Batch No -->
+              <!-- Batch -->
               <td style="font-family:var(--font-mono,monospace);font-size:12px;
                          color:var(--text-muted)"
-                  th:text="${medicine.batchNo ?: '—'}">—</td>
+                  th:text="${m.batchNo ?: '—'}">—</td>
 
-              <!-- Price -->
-              <td class="num" style="font-family:var(--font-mono,monospace);font-weight:600">
-                ₹<span th:text="${#numbers.formatDecimal(medicine.price, 1, 2)}">0.00</span>
+              <!-- Purchase Price -->
+              <td class="num">
+                <span th:if="${m.purchasePrice != null}"
+                      style="font-family:var(--font-mono,monospace);
+                             font-size:13px;color:#64748b">
+                  ₹<span th:text="${#numbers.formatDecimal(m.purchasePrice,1,2)}">0.00</span>
+                </span>
+                <span th:if="${m.purchasePrice == null}"
+                      style="color:var(--text-muted);font-size:12px"
+                      title="Purchase price not set">—</span>
+              </td>
+
+              <!-- Selling Price -->
+              <td class="num"
+                  style="font-family:var(--font-mono,monospace);font-weight:600">
+                <span th:if="${m.price != null}">
+                  ₹<span th:text="${#numbers.formatDecimal(m.price,1,2)}">0.00</span>
+                </span>
+                <span th:if="${m.price == null}"
+                      style="color:var(--text-muted);font-size:12px">—</span>
+              </td>
+
+              <!-- Profit -->
+              <td class="num">
+                <span th:if="${m.profit != null}"
+                      style="font-family:var(--font-mono,monospace);
+                             font-size:13px;font-weight:700"
+                      th:style="'font-family:var(--font-mono,monospace);font-size:13px;font-weight:700;color:'
+                                + (${m.profit.signum() >= 0} ? '#15803d' : '#dc2626')">
+                  <span th:text="${m.profit.signum() >= 0} ? '▲' : '▼'">▲</span>
+                  ₹<span th:text="${#numbers.formatDecimal(m.profit.abs(),1,2)}">0.00</span>
+                </span>
+                <span th:if="${m.profit == null}"
+                      style="color:var(--text-muted);font-size:12px">—</span>
+              </td>
+
+              <!-- Margin % -->
+              <td class="num">
+                <span th:if="${m.profitPercentage != null}"
+                      style="display:inline-block;font-size:11px;font-weight:700;
+                             padding:2px 7px;border-radius:20px"
+                      th:style="'display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;'
+                                + (${m.profitPercentage.signum() >= 0}
+                                   ? 'background:#dcfce7;color:#15803d'
+                                   : 'background:#fee2e2;color:#dc2626')"
+                      th:text="${#numbers.formatDecimal(m.profitPercentage,1,1)} + '%'">0%</span>
+                <span th:if="${m.profitPercentage == null}"
+                      style="color:var(--text-muted);font-size:12px">—</span>
               </td>
 
               <!-- GST -->
               <td class="num">
                 <span class="badge badge-info"
-                      th:text="${medicine.gstPercentage} + '%'">0%</span>
+                      th:text="${m.gstPercentage} + '%'">0%</span>
               </td>
 
               <!-- Stock -->
               <td class="num">
-                <span th:classappend="${medicine.lowStock ? 'badge-warning' : 'badge-success'}"
-                      class="badge"
-                      th:text="${medicine.stockQuantity}">0</span>
+                <span class="badge"
+                      th:classappend="${m.lowStock} ? 'badge-warning' : 'badge-success'"
+                      th:text="${m.stockQuantity}">0</span>
               </td>
 
               <!-- Expiry -->
               <td>
-                <span th:if="${medicine.expiryDate != null}">
-                  <span th:text="${#temporals.format(medicine.expiryDate, 'MMM yyyy')}"
-                        th:classappend="${medicine.expiryDate.isBefore(#temporals.createNow().toLocalDate().plusMonths(2))
-                                          ? 'style=color:var(--danger);font-weight:700'
-                                          : ''}"
-                        style="font-size:13px">Jan 2026</span>
-                </span>
-                <span th:if="${medicine.expiryDate == null}"
+                <span th:if="${m.expiryDate != null}"
+                      th:style="${m.expiryDate.isBefore(#temporals.createNow().toLocalDate().plusMonths(2))}
+                                  ? 'font-size:13px;color:#dc2626;font-weight:700'
+                                  : 'font-size:13px'"
+                      th:text="${#temporals.format(m.expiryDate,'MMM yyyy')}">Jan 2026</span>
+                <span th:if="${m.expiryDate == null}"
                       style="color:var(--text-muted);font-size:12px">—</span>
               </td>
 
-              <!-- Actions (OWNER / PHARMACIST only) -->
+              <!-- Actions -->
               <td th:if="${currentUser != null and currentUser.canManageMedicines()}"
                   style="white-space:nowrap">
-                <a th:href="@{/medicine/edit/{id}(id=${medicine.id})}"
+                <a th:href="@{/medicine/edit/{id}(id=${m.id})}"
                    class="btn btn-sm btn-outline"
                    style="border:1.5px solid var(--border);background:transparent;
                           color:var(--text);margin-right:4px">✏️ Edit</a>
-                <a th:href="@{/medicine/delete/{id}(id=${medicine.id})}"
+                <a th:href="@{/medicine/delete/{id}(id=${m.id})}"
                    class="btn btn-sm btn-danger"
                    onclick="return confirm('Delete this medicine? This cannot be undone.')">
-                  🗑 Delete</a>
+                  🗑</a>
               </td>
 
             </tr>
           </tbody>
         </table>
-      </div><!-- /table-wrap -->
-    </div><!-- /card -->
+      </div>
+    </div>
 
-  </div><!-- /page-content -->
-</div><!-- /main-wrapper -->
-
+  </div>
+</div>
 </body>
 </html>
