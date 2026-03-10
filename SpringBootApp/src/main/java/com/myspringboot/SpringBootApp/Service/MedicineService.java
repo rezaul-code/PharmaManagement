@@ -6,6 +6,7 @@ import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -19,35 +20,34 @@ public class MedicineService {
     @Autowired
     private TenantPharmacyService tenantPharmacyService;
 
-    // ── Code generation ───────────────────────────────────────────────
+    // ── Medicine Code generation ─────────────────────────────────────────
 
-    /**
-     * Generates the next sequential medicine code for the current pharmacy.
-     * Format: MED-001, MED-002, … MED-999, MED-1000, …
-     * Thread-safe: relies on DB unique constraint as the final guard;
-     * the optimistic counter handles the common case without locking.
-     */
     public String generateNextMedicineCode() {
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         int next = medicineRepository
                 .findMaxCodeSequence(pharmacyId)
                 .map(max -> max + 1)
-                .orElse(1);                          // first medicine ever
-        return String.format("MED-%03d", next);      // MED-001 … MED-999, then MED-1000
+                .orElse(1);
+        return String.format("MED-%03d", next);
     }
 
-    // ── Save (create + update) ────────────────────────────────────────
+    // ── Save (create + update) ───────────────────────────────────────────
 
     public Medicine saveMedicine(Medicine medicine) {
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
 
         if (medicine.getId() != null) {
-            // UPDATE – keep the existing code; never regenerate on edit
-            medicineRepository.findByIdAndPharmacyId(medicine.getId(), pharmacyId)
+            // UPDATE — fetch existing to preserve fields the form doesn't send
+            Medicine existing = medicineRepository
+                    .findByIdAndPharmacyId(medicine.getId(), pharmacyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Medicine not found with id: " + medicine.getId()));
+
+            // Preserve the medicine code — never allow it to change on edit
+            medicine.setMedicineCode(existing.getMedicineCode());
+
         } else {
-            // CREATE – assign a new code only if none was set
+            // CREATE — assign code if not already set
             if (medicine.getMedicineCode() == null
                     || medicine.getMedicineCode().isBlank()) {
                 medicine.setMedicineCode(generateNextMedicineCode());
@@ -58,12 +58,12 @@ public class MedicineService {
         return medicineRepository.save(medicine);
     }
 
-    /** Alias kept for backward compatibility. */
+    /** Alias for backward compatibility. */
     public Medicine save(Medicine medicine) {
         return saveMedicine(medicine);
     }
 
-    // ── Read ─────────────────────────────────────────────────────────
+    // ── Read ─────────────────────────────────────────────────────────────
 
     public List<Medicine> getAll() {
         return medicineRepository.findByPharmacyId(
@@ -82,13 +82,12 @@ public class MedicineService {
                 id, tenantPharmacyService.getCurrentPharmacyId());
     }
 
-    /** Look up by medicine code (useful for barcode scanners). */
     public Optional<Medicine> getByMedicineCode(String code) {
         return medicineRepository.findByMedicineCodeAndPharmacyId(
                 code, tenantPharmacyService.getCurrentPharmacyId());
     }
 
-    // ── Delete ────────────────────────────────────────────────────────
+    // ── Delete ────────────────────────────────────────────────────────────
 
     public void deleteMedicine(Long id) {
         Medicine medicine = medicineRepository
@@ -102,20 +101,18 @@ public class MedicineService {
         deleteMedicine(id);
     }
 
-    // ── Search ────────────────────────────────────────────────────────
+    // ── Search ────────────────────────────────────────────────────────────
 
     /**
-     * Original signature – delegates to extended query with null code filter
-     * so existing callers continue to work unchanged.
+     * Original 4-param signature — unchanged, delegates to extended version.
+     * All existing callers continue to work without modification.
      */
     public List<Medicine> searchMedicines(
             Long id, String name, String description, MedicineType type) {
         return searchMedicines(id, name, description, type, null);
     }
 
-    /**
-     * Extended search that also accepts an optional medicine-code fragment.
-     */
+    /** Extended search that also accepts an optional medicine-code fragment. */
     public List<Medicine> searchMedicines(
             Long id, String name, String description,
             MedicineType type, String medicineCode) {
@@ -131,7 +128,7 @@ public class MedicineService {
                 keyword, tenantPharmacyService.getCurrentPharmacyId());
     }
 
-    // ── Analytics ─────────────────────────────────────────────────────
+    // ── Stock analytics ───────────────────────────────────────────────────
 
     public long getTotalCount() {
         return medicineRepository.countByPharmacyId(
@@ -148,6 +145,8 @@ public class MedicineService {
                 10, tenantPharmacyService.getCurrentPharmacyId());
     }
 
+    // ── Expiry analytics ──────────────────────────────────────────────────
+
     public long getExpiringWithin30DaysCount() {
         LocalDate today    = LocalDate.now();
         LocalDate deadline = today.plusDays(30);
@@ -160,5 +159,60 @@ public class MedicineService {
         LocalDate deadline = today.plusDays(30);
         return medicineRepository.findExpiringBetween(
                 tenantPharmacyService.getCurrentPharmacyId(), today, deadline);
+    }
+
+    // ── Profit analytics ──────────────────────────────────────────────────
+
+    /**
+     * Total inventory cost (purchasePrice × stock) across all medicines.
+     */
+    public BigDecimal getTotalInventoryCostValue() {
+        BigDecimal val = medicineRepository.sumInventoryValueAtCost(
+                tenantPharmacyService.getCurrentPharmacyId());
+        return val != null ? val : BigDecimal.ZERO;
+    }
+
+    /**
+     * Total inventory value at selling price (price × stock).
+     */
+    public BigDecimal getTotalInventorySellingValue() {
+        BigDecimal val = medicineRepository.sumInventoryValueAtSelling(
+                tenantPharmacyService.getCurrentPharmacyId());
+        return val != null ? val : BigDecimal.ZERO;
+    }
+
+    /**
+     * Potential profit if all current stock were sold.
+     * = sellingValue − costValue
+     */
+    public BigDecimal getPotentialInventoryProfit() {
+        return getTotalInventorySellingValue()
+                .subtract(getTotalInventoryCostValue());
+    }
+
+    /**
+     * Top N medicines by absolute profit per unit (descending).
+     */
+    public List<Medicine> getTopProfitMedicines(int limit) {
+        return medicineRepository
+                .findTopProfitMedicines(tenantPharmacyService.getCurrentPharmacyId())
+                .stream()
+                .limit(limit)
+                .toList();
+    }
+
+    /**
+     * Medicines where selling price < purchase price (negative margin alert).
+     */
+    public List<Medicine> getNegativeMarginMedicines() {
+        return medicineRepository.findNegativeMarginMedicines(
+                tenantPharmacyService.getCurrentPharmacyId());
+    }
+
+    /**
+     * Count of negative-margin medicines — useful for dashboard warning badge.
+     */
+    public long getNegativeMarginCount() {
+        return getNegativeMarginMedicines().size();
     }
 }
