@@ -11,7 +11,7 @@
 <!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
 <div th:replace="~{fragments/sidebar :: sidebar(activePage='medicines')}"></div>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
 <div class="main-wrapper">
   <div class="topbar">
     <div class="topbar-title">
@@ -24,7 +24,7 @@
   </div>
 
   <div class="page-content">
-    <div style="max-width:760px;margin:0 auto">
+    <div style="max-width:820px;margin:0 auto">
       <div class="card">
         <div class="card-header">
           <div class="card-title">💊 Medicine Details</div>
@@ -33,6 +33,36 @@
 
           <form th:action="@{/add_medicine}" method="post"
                 th:object="${medicine}">
+
+            <!-- ── Medicine Code banner (auto-generated, read-only) ── NEW ── -->
+            <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);
+                        border:1.5px solid #bfdbfe;border-radius:10px;
+                        padding:14px 18px;margin-bottom:24px;
+                        display:flex;align-items:center;gap:14px">
+              <div style="font-size:26px;line-height:1">🏷️</div>
+              <div style="flex:1">
+                <div style="font-size:11px;font-weight:700;color:#1e40af;
+                            text-transform:uppercase;letter-spacing:.6px;
+                            margin-bottom:4px">Medicine Code</div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <input type="text"
+                         th:field="*{medicineCode}"
+                         readonly
+                         placeholder="Auto-generated on save  (e.g. MED-001)"
+                         style="font-family:var(--font-mono,monospace);
+                                font-size:15px;font-weight:700;
+                                color:#1d4ed8;background:transparent;
+                                border:none;outline:none;
+                                min-width:240px;cursor:default"
+                         title="Assigned automatically when you save this medicine" />
+                  <span style="font-size:11px;color:#3b82f6;
+                               background:#dbeafe;padding:2px 8px;
+                               border-radius:20px;font-weight:600;white-space:nowrap">
+                    🔒 Auto-assigned on save
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <!-- Row 1: Name + Type -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -136,15 +166,15 @@
 <script>
 // Live GST preview
 function updatePreview() {
-  const price   = parseFloat(document.querySelector('[name="price"]')?.value || 100);
-  const gstPct  = parseFloat(document.querySelector('[name="gstPercentage"]')?.value || 0);
-  const gstAmt  = price * gstPct / 100;
-  const final_  = price + gstAmt;
+  const price  = parseFloat(document.querySelector('[name="price"]')?.value || 100);
+  const gstPct = parseFloat(document.querySelector('[name="gstPercentage"]')?.value || 0);
+  const gstAmt = price * gstPct / 100;
+  const final_ = price + gstAmt;
 
-  document.getElementById('previewPrice').textContent   = price.toFixed(2);
-  document.getElementById('previewGstPct').textContent  = gstPct;
-  document.getElementById('previewGstAmt').textContent  = gstAmt.toFixed(2);
-  document.getElementById('previewFinal').textContent   = final_.toFixed(2);
+  document.getElementById('previewPrice').textContent  = price.toFixed(2);
+  document.getElementById('previewGstPct').textContent = gstPct;
+  document.getElementById('previewGstAmt').textContent = gstAmt.toFixed(2);
+  document.getElementById('previewFinal').textContent  = final_.toFixed(2);
 }
 
 document.querySelector('[name="price"]')?.addEventListener('input', updatePreview);

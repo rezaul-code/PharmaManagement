@@ -37,12 +37,15 @@ public class MedicineController {
 
     // ── READ (all roles) ──────────────────────────────────────────────
 
+ // Replace the existing showMedicines method:
+
     @GetMapping({"/medicine/show", "/show_medicine"})
     public String showMedicines(
-            @RequestParam(required = false) Long id,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long         id,
+            @RequestParam(required = false) String       name,
+            @RequestParam(required = false) String       description,
             @RequestParam(required = false) MedicineType type,
+            @RequestParam(required = false) String       medicineCode,   // ← NEW
             HttpSession session,
             Model model) {
 
@@ -50,13 +53,14 @@ public class MedicineController {
         if (user == null) return "redirect:/login";
 
         model.addAttribute("medicines",
-                medicineService.searchMedicines(id, name, description, type));
-        model.addAttribute("types",             MedicineType.values());
-        model.addAttribute("searchId",          id);
-        model.addAttribute("searchName",        name);
-        model.addAttribute("searchDescription", description);
-        model.addAttribute("searchType",        type);
-        model.addAttribute("currentUser",       user);   // used in template for button visibility
+                medicineService.searchMedicines(id, name, description, type, medicineCode));
+        model.addAttribute("types",                MedicineType.values());
+        model.addAttribute("searchId",             id);
+        model.addAttribute("searchName",           name);
+        model.addAttribute("searchDescription",    description);
+        model.addAttribute("searchType",           type);
+        model.addAttribute("searchMedicineCode",   medicineCode);        // ← NEW
+        model.addAttribute("currentUser",          user);
         return "pages/show_medicine";
     }
 
