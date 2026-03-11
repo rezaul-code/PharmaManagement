@@ -1,44 +1,39 @@
+// src/main/java/com/myspringboot/SpringBootApp/dto/BillingForm.java
 package com.myspringboot.SpringBootApp.dto;
 
+import com.myspringboot.SpringBootApp.model.PaymentType;
 import com.myspringboot.SpringBootApp.model.BillingItemForm;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.DecimalMin;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BillingForm {
 
-    // ── Patient / customer info ──────────────────────────────────────
     private String patientName;
-    private String customerName;
     private String patientPhone;
     private String notes;
 
-    // ── Line items ───────────────────────────────────────────────────
-    @Valid
-    @NotEmpty(message = "Add at least one item")
     private List<BillingItemForm> items = new ArrayList<>();
 
-    // ── Bill-level GST summary ───────────────────────────────────────
+    // Totals (populated by JS, used server-side as reference only)
     private BigDecimal subtotal   = BigDecimal.ZERO;
     private BigDecimal totalGst   = BigDecimal.ZERO;
     private BigDecimal cgst       = BigDecimal.ZERO;
     private BigDecimal sgst       = BigDecimal.ZERO;
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
-    // ─── Getters & Setters ───────────────────────────────────────────
-    public String getPatientName() { return patientName; }
-    public void setPatientName(String patientName) {
-        this.patientName = patientName;
-        this.customerName = patientName;
-    }
+    // ── New credit fields ──────────────────────────────────────────────
+    private PaymentType paymentType = PaymentType.CASH;
 
-    public String getCustomerName() { return customerName; }
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-        this.patientName = customerName;
-    }
+    @DecimalMin(value = "0.0", message = "Initial payment cannot be negative")
+    private BigDecimal initialPayment = BigDecimal.ZERO;
+
+    // Getters / Setters
+
+    public String getPatientName() { return patientName; }
+    public void setPatientName(String patientName) { this.patientName = patientName; }
 
     public String getPatientPhone() { return patientPhone; }
     public void setPatientPhone(String patientPhone) { this.patientPhone = patientPhone; }
@@ -63,4 +58,10 @@ public class BillingForm {
 
     public BigDecimal getGrandTotal() { return grandTotal; }
     public void setGrandTotal(BigDecimal grandTotal) { this.grandTotal = grandTotal; }
+
+    public PaymentType getPaymentType() { return paymentType; }
+    public void setPaymentType(PaymentType paymentType) { this.paymentType = paymentType; }
+
+    public BigDecimal getInitialPayment() { return initialPayment; }
+    public void setInitialPayment(BigDecimal initialPayment) { this.initialPayment = initialPayment; }
 }

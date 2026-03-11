@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Credit Bills — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<div th:replace="~{fragments/sidebar :: sidebar(activePage='billing-credit')}"></div>
+
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Credit Bills
+      <small>Pending &amp; partial credit payments</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/billing/new"  class="topbar-btn btn-primary">🧾 New Bill</a>
+      <a href="/billing/list" class="topbar-btn btn-outline">← All Bills</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Credit summary stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px">
+
+      <div class="analytics-stat">
+        <div class="analytics-stat-icon" style="background:#ede9fe">🤝</div>
+        <div class="analytics-stat-label">Total Credit Issued</div>
+        <div class="analytics-stat-value" style="color:#7c3aed">
+          ₹<span th:text="${#numbers.formatDecimal(creditSummary.totalCreditIssued,1,2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub"
+             th:text="${creditSummary.totalCreditBills} + ' credit bill(s)'">0 bills</div>
+      </div>
+
+      <div class="analytics-stat" style="border-color:#bbf7d0">
+        <div class="analytics-stat-icon" style="background:#dcfce7">✅</div>
+        <div class="analytics-stat-label">Total Recovered</div>
+        <div class="analytics-stat-value" style="color:#15803d">
+          ₹<span th:text="${#numbers.formatDecimal(creditSummary.totalRecovered,1,2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub">Payments collected</div>
+      </div>
+
+      <div class="analytics-stat" style="border-color:#fca5a5">
+        <div class="analytics-stat-icon" style="background:#fee2e2">⏳</div>
+        <div class="analytics-stat-label">Pending Balance</div>
+        <div class="analytics-stat-value" style="color:#dc2626">
+          ₹<span th:text="${#numbers.formatDecimal(creditSummary.pendingBalance,1,2)}">0.00</span>
+        </div>
+        <div class="analytics-stat-sub"
+             th:text="${creditSummary.pendingCreditBills} + ' bill(s) outstanding'">0 outstanding</div>
+      </div>
+
+    </div>
+
+    <!-- Bills table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⏳ Pending Credit Bills</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${bills.size()} + ' record(s)'">0</span>
+      </div>
+      <div class="table-wrap">
+        <table class="pharma-table">
+          <thead>
+            <tr>
+              <th>Bill #</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Date</th>
+              <th class="num">Grand Total</th>
+              <th class="num">Paid</th>
+              <th class="num">Balance Due</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(bills)}">
+              <td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">
+                🎉 No pending credit bills. All dues are cleared!
+              </td>
+            </tr>
+            <tr th:each="bill : ${bills}">
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   th:text="${bill.billNumber}"
+                   style="color:var(--primary);font-weight:700;font-family:var(--font-mono)">—</a>
+              </td>
+              <td style="font-weight:600" th:text="${bill.patientName ?: 'Unknown'}">—</td>
+              <td style="color:var(--text-muted)" th:text="${bill.patientPhone ?: '—'}">—</td>
+              <td style="color:var(--text-muted);font-size:12.5px"
+                  th:text="${#temporals.format(bill.createdAt,'dd MMM yyyy')}">—</td>
+              <td class="num">₹<span th:text="${#numbers.formatDecimal(bill.grandTotal,1,2)}">0</span></td>
+              <td class="num" style="color:#15803d;font-weight:700">
+                ₹<span th:text="${#numbers.formatDecimal(bill.paidAmount,1,2)}">0</span>
+              </td>
+              <td class="num" style="color:#dc2626;font-weight:700">
+                ₹<span th:text="${#numbers.formatDecimal(bill.balanceDue,1,2)}">0</span>
+              </td>
+              <td>
+                <span class="badge"
+                  th:classappend="${bill.status.name() == 'CREDIT_CLEARED'  ? 'badge-success' :
+                                   bill.status.name() == 'CREDIT_PARTIAL'  ? 'badge-warning' :
+                                                                              'badge-danger'}"
+                  th:text="${bill.status.name() == 'CREDIT_CLEARED'  ? 'Cleared' :
+                             bill.status.name() == 'CREDIT_PARTIAL'  ? 'Partial' :
+                                                                        'Pending'}">—</span>
+              </td>
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   class="btn btn-sm btn-outline">👁 View / Pay</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

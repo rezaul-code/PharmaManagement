@@ -2,6 +2,8 @@ package com.myspringboot.SpringBootApp.repo;
 
 import com.myspringboot.SpringBootApp.dto.SalesAnalyticsResult;
 import com.myspringboot.SpringBootApp.model.Billing;
+import com.myspringboot.SpringBootApp.model.Billing.BillingStatus;
+import com.myspringboot.SpringBootApp.model.PaymentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,25 +14,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repository for Billing.
- *
- * KEY MODEL FACTS (confirmed from source):
- *  - Billing      date field  → createdAt          (NOT billingDate)
- *  - BillingItem  price field → unitPrice           (selling price at time of sale)
- *  - BillingItem  has NO purchasePrice field        (join Medicine for that)
- *  - Medicine     selling price column → price
- *  - Medicine     purchase price column → purchasePrice
- *
- * PROFIT formula:
- *   bi.quantity × (bi.medicine.price − bi.medicine.purchasePrice)
- *   bi.medicine.purchasePrice may be NULL on legacy rows → COALESCE → 0
- */
 @Repository
 public interface BillingRepository extends JpaRepository<Billing, Long> {
 
     // ─────────────────────────────────────────────────────────────────────────
-    // EXISTING utility queries (unchanged)
+    // CORE / EXISTING QUERIES
     // ─────────────────────────────────────────────────────────────────────────
 
     List<Billing> findByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId);
@@ -52,6 +40,80 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
             @Param("pharmacyId") Long          pharmacyId,
             @Param("start")      LocalDateTime start,
             @Param("end")        LocalDateTime end);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREDIT BILLING QUERIES
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * All credit bills for a pharmacy ordered newest first.
+     */
+    List<Billing> findByPharmacyIdAndPaymentTypeOrderByCreatedAtDesc(
+            Long        pharmacyId,
+            PaymentType paymentType);
+
+    /**
+     * Bills matching any of the supplied statuses (used for pending/partial credit lists).
+     */
+    List<Billing> findByPharmacyIdAndStatusInOrderByCreatedAtDesc(
+            Long               pharmacyId,
+            List<BillingStatus> statuses);
+
+    /**
+     * Total face-value of all credit issued by a pharmacy.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(b.creditAmount), 0)
+        FROM   Billing b
+        WHERE  b.pharmacy.id  = :pharmacyId
+          AND  b.paymentType  = 'CREDIT'
+        """)
+    BigDecimal sumCreditAmountByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    /**
+     * Total cash actually collected against credit bills.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(b.paidAmount), 0)
+        FROM   Billing b
+        WHERE  b.pharmacy.id  = :pharmacyId
+          AND  b.paymentType  = 'CREDIT'
+        """)
+    BigDecimal sumPaidAmountByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    /**
+     * Total outstanding balance still owed across all credit bills.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(b.balanceDue), 0)
+        FROM   Billing b
+        WHERE  b.pharmacy.id  = :pharmacyId
+          AND  b.paymentType  = 'CREDIT'
+        """)
+    BigDecimal sumBalanceDueByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    /**
+     * Count of all credit bills ever created for the pharmacy.
+     */
+    @Query("""
+        SELECT COUNT(b)
+        FROM   Billing b
+        WHERE  b.pharmacy.id  = :pharmacyId
+          AND  b.paymentType  = 'CREDIT'
+        """)
+    long countCreditBillsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
+
+    /**
+     * Count of credit bills still carrying an outstanding balance
+     * (CREDIT_PENDING or CREDIT_PARTIAL).
+     */
+    @Query("""
+        SELECT COUNT(b)
+        FROM   Billing b
+        WHERE  b.pharmacy.id = :pharmacyId
+          AND  b.status IN ('CREDIT_PENDING', 'CREDIT_PARTIAL')
+        """)
+    long countPendingCreditBillsByPharmacyId(@Param("pharmacyId") Long pharmacyId);
 
     // ─────────────────────────────────────────────────────────────────────────
     // SALES ANALYTICS — Top medicines
@@ -155,7 +217,7 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
             @Param("end")        LocalDateTime end);
 
     // ─────────────────────────────────────────────────────────────────────────
-    // MONTHLY SALES TREND  (NEW)
+    // MONTHLY SALES TREND
     //
     // Groups by YEAR + MONTH of b.createdAt.
     // Profit joins Medicine for purchasePrice; COALESCE handles NULL rows.
@@ -196,4 +258,18 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
             @Param("pharmacyId") Long          pharmacyId,
             @Param("start")      LocalDateTime start,
             @Param("end")        LocalDateTime end);
+    
+
+
+    
+    
+    
+    @Query("""
+    	    SELECT b FROM Billing b 
+    	    LEFT JOIN FETCH b.createdBy 
+    	    WHERE b.id = :id AND b.pharmacy.id = :pharmacyId
+    	""")
+    	Optional<Billing> findByIdWithDetails(@Param("id") Long id, @Param("pharmacyId") Long pharmacyId);
 }
+
+
