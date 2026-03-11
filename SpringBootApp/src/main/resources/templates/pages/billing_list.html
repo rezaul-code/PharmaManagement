@@ -5,13 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bill History — PharmaManagement</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <style>
+    /* ── Payment type pill ─────────────────────────────────────────── */
+    .pt-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .pt-badge-cash   { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
+    .pt-badge-upi    { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
+    .pt-badge-card   { background:#f5f3ff; color:#6d28d9; border:1px solid #c4b5fd; }
+    .pt-badge-credit { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+
+    /* ── Credit status overrides ───────────────────────────────────── */
+    .badge-credit-pending { background:#fee2e2; color:#b91c1c; }
+    .badge-credit-partial { background:#fef3c7; color:#92400e; }
+    .badge-credit-cleared { background:#dcfce7; color:#15803d; }
+
+    /* ── Filter / search bar ───────────────────────────────────────── */
+    .list-filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 20px; border-bottom: 1px solid var(--border, #e2e8f0);
+    }
+    .filter-chip {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      border: 1.5px solid var(--border, #e2e8f0); background: transparent;
+      color: var(--text-muted, #64748b); cursor: pointer;
+      text-decoration: none; transition: all .15s;
+    }
+    .filter-chip:hover  { border-color: var(--primary, #0ea5e9); color: var(--primary, #0ea5e9); }
+    .filter-chip.active { background: var(--primary, #0ea5e9); border-color: var(--primary, #0ea5e9); color: #fff; }
+
+    /* ── Balance due warning chip ──────────────────────────────────── */
+    .balance-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      border-radius: 6px; background:#fee2e2; color:#b91c1c;
+    }
+  </style>
 </head>
 <body>
 
-<!-- ══ Sidebar ══════════════════════════════════════════════════════════ -->
+<!-- ── Sidebar ──────────────────────────────────────────────────────── -->
 <div th:replace="~{fragments/sidebar :: sidebar(activePage='billing-history')}"></div>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════ -->
+<!-- ── Main ─────────────────────────────────────────────────────────── -->
 <div class="main-wrapper">
   <div class="topbar">
     <div class="topbar-title">
@@ -19,70 +56,233 @@
       <small>All billing records, most recent first</small>
     </div>
     <div class="topbar-actions">
+      <a href="/billing/credit" class="topbar-btn btn-outline"
+         th:if="${bills != null}"
+         style="border-color:#fde68a;color:#b45309;background:#fffbeb">
+        🤝 Credit Bills
+      </a>
       <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
     </div>
   </div>
 
   <div class="page-content">
+
+    <!-- Flash messages -->
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger"  th:if="${error}"   th:text="${error}"></div>
+
     <div class="card">
       <div class="card-header">
         <div class="card-title">📋 All Bills</div>
         <span style="font-size:12px;color:var(--text-muted)"
               th:text="${bills.size()} + ' record(s)'">0 records</span>
       </div>
+
+      <!-- Filter chips -->
+      <div class="list-filter-bar">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Filter</span>
+        <a href="/billing/list"                            class="filter-chip active"  id="chip-all">All</a>
+        <a href="javascript:void(0)" onclick="filterTable('PAID')"          class="filter-chip" id="chip-paid">✅ Paid</a>
+        <a href="javascript:void(0)" onclick="filterTable('CREDIT')"        class="filter-chip" id="chip-credit">🤝 Credit</a>
+        <a href="javascript:void(0)" onclick="filterTable('CREDIT_PENDING')"class="filter-chip" id="chip-pending">⏳ Pending</a>
+        <a href="javascript:void(0)" onclick="filterTable('CANCELLED')"     class="filter-chip" id="chip-cancelled">❌ Cancelled</a>
+
+        <div style="margin-left:auto">
+          <input type="text" id="billSearch" class="form-control"
+                 style="width:220px;height:34px;font-size:13px"
+                 placeholder="🔍 Search patient / bill #…"
+                 oninput="searchTable(this.value)" />
+        </div>
+      </div>
+
       <div class="table-wrap">
-        <table class="pharma-table">
+        <table class="pharma-table" id="billTable">
           <thead>
             <tr>
               <th>Bill #</th>
               <th>Patient</th>
               <th>Phone</th>
               <th>Date</th>
+              <th>Payment</th>
               <th class="num">Subtotal</th>
               <th class="num">GST</th>
               <th class="num">Grand Total</th>
+              <th class="num">Balance Due</th>
               <th>Status</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr th:if="${#lists.isEmpty(bills)}">
-              <td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">
-                No bills found. <a href="/billing/new" style="color:var(--primary);font-weight:600">Create the first one →</a>
+
+            <!-- Empty state -->
+            <tr th:if="${#lists.isEmpty(bills)}" class="no-filter-hide">
+              <td colspan="11" style="text-align:center;padding:40px;color:var(--text-muted)">
+                No bills found.
+                <a href="/billing/new" style="color:var(--primary);font-weight:600">Create the first one →</a>
               </td>
             </tr>
-            <tr th:each="bill : ${bills}">
+
+            <tr th:each="bill : ${bills}"
+                th:data-status="${bill.status.name()}"
+                th:data-payment="${bill.paymentType.name()}"
+                th:data-search="${(bill.billNumber ?: '') + ' ' + (bill.patientName ?: '') + ' ' + (bill.patientPhone ?: '')}">
+
+              <!-- Bill number -->
               <td>
                 <a th:href="@{/billing/view/{id}(id=${bill.id})}"
                    th:text="${bill.billNumber}"
-                   style="color:var(--primary);font-weight:700;font-family:var(--font-mono)">—</a>
+                   style="color:var(--primary);font-weight:700;font-family:var(--font-mono,monospace)">—</a>
               </td>
-              <td th:text="${bill.patientName ?: 'Walk-in'}">—</td>
-              <td style="color:var(--text-muted)" th:text="${bill.patientPhone ?: '—'}">—</td>
+
+              <!-- Patient -->
+              <td style="font-weight:600" th:text="${bill.patientName ?: 'Walk-in'}">—</td>
+
+              <!-- Phone -->
               <td style="color:var(--text-muted);font-size:12.5px"
-                  th:text="${#temporals.format(bill.createdAt, 'dd MMM yyyy, hh:mm a')}">—</td>
-              <td class="num">₹<span th:text="${#numbers.formatDecimal(bill.subtotal, 1, 2)}">0.00</span></td>
-              <td class="num" style="color:var(--warning)">₹<span th:text="${#numbers.formatDecimal(bill.totalGst, 1, 2)}">0.00</span></td>
-              <td class="num fw-bold text-primary">₹<span th:text="${#numbers.formatDecimal(bill.grandTotal, 1, 2)}">0.00</span></td>
+                  th:text="${bill.patientPhone ?: '—'}">—</td>
+
+              <!-- Date -->
+              <td style="color:var(--text-muted);font-size:12.5px"
+                  th:text="${#temporals.format(bill.createdAt,'dd MMM yyyy, hh:mm a')}">—</td>
+
+              <!-- Payment type -->
+              <td>
+                <span class="pt-badge"
+                  th:classappend="${bill.paymentType.name() == 'CASH'}   ? 'pt-badge-cash'   :
+                                   ${bill.paymentType.name() == 'UPI'}   ? 'pt-badge-upi'    :
+                                   ${bill.paymentType.name() == 'CARD'}  ? 'pt-badge-card'   : 'pt-badge-credit'"
+                  th:text="${bill.paymentType.name() == 'CASH'   ? '💵 Cash'   :
+                             bill.paymentType.name() == 'UPI'    ? '📱 UPI'    :
+                             bill.paymentType.name() == 'CARD'   ? '💳 Card'   : '🤝 Credit'}">—</span>
+              </td>
+
+              <!-- Subtotal -->
+              <td class="num">₹<span th:text="${#numbers.formatDecimal(bill.subtotal,1,2)}">0.00</span></td>
+
+              <!-- GST -->
+              <td class="num" style="color:var(--warning,#f59e0b)">
+                ₹<span th:text="${#numbers.formatDecimal(bill.totalGst,1,2)}">0.00</span>
+              </td>
+
+              <!-- Grand Total -->
+              <td class="num" style="font-weight:700;color:var(--primary)">
+                ₹<span th:text="${#numbers.formatDecimal(bill.grandTotal,1,2)}">0.00</span>
+              </td>
+
+              <!-- Balance Due (only meaningful for credit) -->
+              <td class="num">
+                <span th:if="${bill.isCreditBill() and bill.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                      class="balance-chip">
+                  ₹<span th:text="${#numbers.formatDecimal(bill.balanceDue,1,2)}">0.00</span>
+                </span>
+                <span th:unless="${bill.isCreditBill() and bill.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                      style="color:var(--text-muted)">—</span>
+              </td>
+
+              <!-- Status -->
               <td>
                 <span class="badge"
-                  th:classappend="${bill.status.name() == 'PAID' ? 'badge-success' : bill.status.name() == 'CANCELLED' ? 'badge-danger' : 'badge-warning'}"
-                  th:text="${bill.status}">PAID</span>
+                  th:classappend="${bill.status.name() == 'PAID'}            ? 'badge-success'        :
+                                   ${bill.status.name() == 'CREDIT_CLEARED'} ? 'badge-credit-cleared' :
+                                   ${bill.status.name() == 'CREDIT_PARTIAL'} ? 'badge-credit-partial' :
+                                   ${bill.status.name() == 'CREDIT_PENDING'} ? 'badge-credit-pending' :
+                                   ${bill.status.name() == 'CANCELLED'}      ? 'badge-danger'         : 'badge-warning'"
+                  th:text="${bill.status.name() == 'CREDIT_PENDING' ? 'Credit Pending'  :
+                             bill.status.name() == 'CREDIT_PARTIAL' ? 'Credit Partial'  :
+                             bill.status.name() == 'CREDIT_CLEARED' ? 'Credit Cleared'  :
+                             bill.status}">—</span>
               </td>
+
+              <!-- Actions -->
               <td>
                 <a th:href="@{/billing/view/{id}(id=${bill.id})}"
                    class="btn btn-sm btn-outline"
                    style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
-                   👁 View
+                  👁 View
                 </a>
               </td>
+
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Table footer count -->
+      <div style="padding:10px 20px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border,#e2e8f0)"
+           id="tableFooter">
+        Showing all <span th:text="${bills.size()}">0</span> records
+      </div>
     </div>
   </div>
-
 </div>
+
+<script>
+(function () {
+  var activeFilter = 'ALL';
+  var activeSearch = '';
+
+  window.filterTable = function (type) {
+    activeFilter = type;
+
+    // Update chip active state
+    document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+    var chipMap = { 'ALL':'chip-all', 'PAID':'chip-paid', 'CREDIT':'chip-credit',
+                    'CREDIT_PENDING':'chip-pending', 'CANCELLED':'chip-cancelled' };
+    var chip = document.getElementById(chipMap[type] || 'chip-all');
+    if (chip) chip.classList.add('active');
+
+    applyFilters();
+  };
+
+  window.searchTable = function (q) {
+    activeSearch = q.toLowerCase().trim();
+    applyFilters();
+  };
+
+  function applyFilters() {
+    var rows    = document.querySelectorAll('#billTable tbody tr[data-status]');
+    var visible = 0;
+
+    rows.forEach(function (tr) {
+      var status  = tr.dataset.status  || '';
+      var payment = tr.dataset.payment || '';
+      var search  = (tr.dataset.search || '').toLowerCase();
+
+      var matchFilter = true;
+      if (activeFilter === 'PAID')           matchFilter = (status === 'PAID');
+      else if (activeFilter === 'CREDIT')    matchFilter = (payment === 'CREDIT');
+      else if (activeFilter === 'CREDIT_PENDING') matchFilter = (status === 'CREDIT_PENDING' || status === 'CREDIT_PARTIAL');
+      else if (activeFilter === 'CANCELLED') matchFilter = (status === 'CANCELLED');
+
+      var matchSearch = !activeSearch || search.indexOf(activeSearch) !== -1;
+
+      var show = matchFilter && matchSearch;
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    var footer = document.getElementById('tableFooter');
+    if (footer) {
+      footer.textContent = 'Showing ' + visible + ' of ' + rows.length + ' records';
+    }
+  }
+
+  // Wire up the "All" chip click (it's an anchor to /billing/list, keep for full reload)
+  var chipAll = document.getElementById('chip-all');
+  if (chipAll) {
+    chipAll.addEventListener('click', function (e) {
+      // If already on the list page, just reset filter without navigating
+      if (window.location.pathname === '/billing/list') {
+        e.preventDefault();
+        activeFilter = 'ALL';
+        document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+        chipAll.classList.add('active');
+        applyFilters();
+      }
+    });
+  }
+})();
+</script>
+
 </body>
 </html>

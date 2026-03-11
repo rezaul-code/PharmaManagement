@@ -1,157 +1,338 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title th:text="'Invoice ' + ${billing.billNumber} + ' — PharmaManagement'">Invoice</title>
-  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <title th:text="'Bill ' + ${billing.billNumber} + ' — PharmaManagement'">Bill</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    @media print {
+      .sidebar,.topbar,.topbar-actions,.no-print { display:none !important; }
+      .main-wrapper { margin:0 !important; padding:0 !important; }
+      .page-content  { padding:0 !important; }
+      .card { border:1px solid #ddd !important; box-shadow:none !important; break-inside:avoid; }
+    }
+    .badge-credit-pending { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+    .badge-credit-partial { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+    .badge-credit-cleared { background:#dcfce7; color:#15803d; border:1px solid #86efac; }
+    .credit-stat { background:#fff; border:1.5px solid var(--border,#e2e8f0); border-radius:12px; padding:16px 20px; }
+    .credit-stat-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted,#64748b); margin-bottom:4px; }
+    .credit-stat-value { font-size:20px; font-weight:800; line-height:1.2; }
+    .payment-history-table th, .payment-history-table td { padding:10px 14px; font-size:13px; }
+    .pt-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .pt-badge-cash   { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
+    .pt-badge-upi    { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
+    .pt-badge-card   { background:#f5f3ff; color:#6d28d9; border:1px solid #c4b5fd; }
+    .pt-badge-credit { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+  </style>
 </head>
 <body>
 
 <div th:replace="~{fragments/sidebar :: sidebar(activePage='billing-history')}"></div>
 
 <div class="main-wrapper">
-  <div class="topbar no-print">
+  <div class="topbar">
     <div class="topbar-title">
-      Invoice
-      <small th:text="${billing.billNumber}">BILL-XXXXXXXX-0001</small>
+      Bill <span th:text="${billing.billNumber}">—</span>
+      <small th:text="${#temporals.format(billing.createdAt,'dd MMM yyyy, hh:mm a')}">—</small>
     </div>
-    <div class="topbar-actions">
-      <a href="/billing/list" class="topbar-btn btn-outline">← Back</a>
-      <button onclick="window.print()" class="topbar-btn btn-primary">🖨 Print Invoice</button>
+    <div class="topbar-actions no-print">
+      <a href="/billing/list" class="topbar-btn btn-outline">&#8592; All Bills</a>
+      <a href="/billing/new"  class="topbar-btn btn-primary">&#129534; New Bill</a>
+      <button onclick="window.print()" class="topbar-btn btn-outline">&#128424; Print</button>
     </div>
   </div>
 
   <div class="page-content">
 
-    <div class="invoice-wrap">
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger"  th:if="${error}"   th:text="${error}"></div>
 
-      <!-- Header -->
-      <div class="invoice-header">
-        <div>
-          <div class="invoice-brand-name">💊 <span th:text="${pharmacy.name}">Pharmacy</span></div>
-          <div style="margin-top:12px;font-size:12px;color:#94a3b8;line-height:1.7">
-            <span th:text="${pharmacy.address}"></span><br/>
-            <span th:if="${pharmacy.phone}" th:text="'📞 ' + ${pharmacy.phone}"></span><br/>
-            <span th:if="${pharmacy.email}" th:text="'✉ ' + ${pharmacy.email}"></span><br/>
-            <span th:if="${pharmacy.gstNumber}" th:text="'GSTIN: ' + ${pharmacy.gstNumber}"></span>
-          </div>
-        </div>
-        <div class="invoice-meta">
-          <div style="font-size:11px;color:#94a3b8;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px">Tax Invoice</div>
-          <div class="invoice-bill-no" th:text="${billing.billNumber}">BILL-XXXXXXXX-0001</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:6px"
-               th:text="${#temporals.format(billing.createdAt, 'dd MMM yyyy, hh:mm a')}">Date</div>
-          <div style="margin-top:12px">
-            <span class="badge"
-              th:classappend="${billing.status.name() == 'PAID' ? 'badge-success' : billing.status.name() == 'CANCELLED' ? 'badge-danger' : 'badge-warning'}"
-              th:text="${billing.status}">PAID</span>
-          </div>
+    <!-- ================================================================
+         BILL HEADER
+         ================================================================ -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <div class="card-title">&#129534; Bill Details</div>
+        <div style="display:flex;align-items:center;gap:8px">
+
+          <!-- Payment type badge — single-line ternary -->
+          <span class="pt-badge" th:classappend="${billing.paymentType.name() == 'CASH' ? 'pt-badge-cash' : (billing.paymentType.name() == 'UPI' ? 'pt-badge-upi' : (billing.paymentType.name() == 'CARD' ? 'pt-badge-card' : 'pt-badge-credit'))}" th:text="${billing.paymentType.name() == 'CASH' ? 'Cash' : (billing.paymentType.name() == 'UPI' ? 'UPI' : (billing.paymentType.name() == 'CARD' ? 'Card' : 'Credit'))}">—</span>
+
+          <!-- Status badge — single-line ternary -->
+          <span class="badge" th:classappend="${billing.status.name() == 'PAID' ? 'badge-success' : (billing.status.name() == 'CREDIT_CLEARED' ? 'badge-credit-cleared' : (billing.status.name() == 'CREDIT_PARTIAL' ? 'badge-credit-partial' : (billing.status.name() == 'CREDIT_PENDING' ? 'badge-credit-pending' : (billing.status.name() == 'CANCELLED' ? 'badge-danger' : 'badge-warning'))))}" th:text="${billing.status.name() == 'CREDIT_PENDING' ? 'Credit Pending' : (billing.status.name() == 'CREDIT_PARTIAL' ? 'Credit Partial' : (billing.status.name() == 'CREDIT_CLEARED' ? 'Credit Cleared' : billing.status.name()))}">—</span>
+
         </div>
       </div>
 
-      <!-- Body -->
-      <div class="invoice-body">
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px">
 
-        <!-- Bill To -->
-        <div class="invoice-parties">
           <div>
-            <div class="invoice-party-label">Bill To</div>
-            <div class="invoice-party-name" th:text="${billing.patientName ?: 'Walk-in Customer'}">Patient</div>
-            <div class="invoice-party-sub" th:text="${billing.patientPhone ?: ''}">Phone</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Bill Number</div>
+            <div style="font-size:15px;font-weight:700;font-family:var(--font-mono,monospace);color:var(--primary)" th:text="${billing.billNumber}">—</div>
           </div>
+
           <div>
-            <div class="invoice-party-label">Served By</div>
-            <div class="invoice-party-name" th:text="${billing.createdBy?.username ?: 'Admin'}">Admin</div>
-            <div class="invoice-party-sub">Pharmacist</div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Patient Name</div>
+            <div style="font-size:15px;font-weight:600" th:text="${billing.patientName ?: 'Walk-in'}">—</div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Phone</div>
+            <div style="font-size:15px;font-weight:600" th:text="${billing.patientPhone ?: '—'}">—</div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Date &amp; Time</div>
+            <div style="font-size:15px;font-weight:600" th:text="${#temporals.format(billing.createdAt,'dd MMM yyyy, hh:mm a')}">—</div>
+          </div>
+
+          <div th:if="${billing.createdBy != null}">
+		  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Created By</div>
+		  <div style="font-size:15px;font-weight:600" th:text="${billing.createdBy.username ?: 'System'}">—</div>
+		</div>
+
+          <div th:if="${pharmacy != null}">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px">Pharmacy</div>
+            <div style="font-size:15px;font-weight:600" th:text="${pharmacy.name}">—</div>
+          </div>
+
+        </div>
+
+        <div th:if="${billing.notes}" style="margin-top:16px;padding:12px 16px;background:#f8fafc;border-radius:8px;border-left:3px solid var(--primary,#0ea5e9)">
+          <span style="font-size:12px;font-weight:700;color:var(--text-muted)">Notes: </span>
+          <span style="font-size:13px" th:text="${billing.notes}">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         CREDIT DETAILS (only for credit bills)
+         ================================================================ -->
+    <div th:if="${billing.isCreditBill()}" class="card mb-4" th:style="'border-color:' + (${billing.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) == 0} ? '#86efac' : '#fde68a')">
+
+      <div class="card-header">
+        <div class="card-title">&#129309; Credit Details</div>
+        <!-- Single-line classappend -->
+        <span class="badge" th:classappend="${billing.status.name() == 'CREDIT_CLEARED' ? 'badge-credit-cleared' : (billing.status.name() == 'CREDIT_PARTIAL' ? 'badge-credit-partial' : 'badge-credit-pending')}" th:text="${billing.status.name() == 'CREDIT_CLEARED' ? 'Cleared' : (billing.status.name() == 'CREDIT_PARTIAL' ? 'Partial' : 'Pending')}">—</span>
+      </div>
+
+      <div class="card-body">
+
+        <!-- Stat cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+
+          <div class="credit-stat" style="border-color:#ddd6fe">
+            <div class="credit-stat-label">Credit Issued</div>
+            <div class="credit-stat-value" style="color:#7c3aed">
+              &#8377;<span th:text="${#numbers.formatDecimal(billing.creditAmount,1,2)}">0.00</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Total bill amount on credit</div>
+          </div>
+
+          <div class="credit-stat" style="border-color:#bbf7d0">
+            <div class="credit-stat-label">Amount Recovered</div>
+            <div class="credit-stat-value" style="color:#15803d">
+              &#8377;<span th:text="${#numbers.formatDecimal(billing.paidAmount,1,2)}">0.00</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px">
+              Across <span th:text="${billing.creditPayments.size()}">0</span> payment(s)
+            </div>
+          </div>
+
+          <div class="credit-stat" th:style="'border-color:' + (${billing.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) == 0} ? '#86efac' : '#fca5a5')">
+            <div class="credit-stat-label">Balance Due</div>
+            <div class="credit-stat-value" th:style="'color:' + (${billing.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) == 0} ? '#15803d' : '#dc2626')">
+              &#8377;<span th:text="${#numbers.formatDecimal(billing.balanceDue,1,2)}">0.00</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Outstanding balance</div>
+          </div>
+
+        </div>
+
+        <!-- Recovery progress bar -->
+        <div th:if="${billing.creditAmount.compareTo(T(java.math.BigDecimal).ZERO) > 0}" style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">
+            <span>Recovery Progress</span>
+            <span th:text="${#numbers.formatDecimal(billing.paidAmount.multiply(T(java.math.BigDecimal).valueOf(100)).divide(billing.creditAmount,2,T(java.math.RoundingMode).HALF_UP),1,1)} + '%'">0%</span>
+          </div>
+          <div style="height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden">
+            <div style="height:100%;border-radius:99px;background:linear-gradient(90deg,#10b981,#34d399);transition:width .4s ease" th:style="'width:' + ${#numbers.formatDecimal(billing.paidAmount.multiply(T(java.math.BigDecimal).valueOf(100)).divide(billing.creditAmount,2,T(java.math.RoundingMode).HALF_UP),1,1)} + '%'"></div>
           </div>
         </div>
 
-        <!-- Items Table -->
-        <table class="invoice-table">
+        <!-- Record payment form (hidden when fully cleared) -->
+        <div th:if="${billing.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}" class="no-print" style="background:#f8fafc;border-radius:12px;padding:16px 20px;border:1.5px solid var(--border,#e2e8f0);margin-bottom:20px">
+
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:14px">&#128229; Record New Payment</div>
+
+          <form th:action="@{/billing/credit/{id}/pay(id=${billing.id})}" method="post" th:object="${creditPaymentForm}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+
+            <div class="form-group mb-0">
+              <label class="form-label">Amount (&#8377;) <span style="color:#ef4444">*</span></label>
+              <input type="number" class="form-control" th:field="*{amountPaid}" step="0.01" min="0.01" th:max="${billing.balanceDue}" th:placeholder="${'Max &#8377;' + #numbers.formatDecimal(billing.balanceDue,1,2)}" style="width:160px" />
+            </div>
+
+            <div class="form-group mb-0">
+              <label class="form-label">Mode <span style="color:#ef4444">*</span></label>
+              <select class="form-control" th:field="*{paymentMode}" style="width:130px">
+                <option th:each="pt : ${paymentTypes}" th:if="${pt.name() != 'CREDIT'}" th:value="${pt.name()}" th:text="${pt.name() == 'CASH' ? 'Cash' : (pt.name() == 'UPI' ? 'UPI' : 'Card')}">—</option>
+              </select>
+            </div>
+
+            <div class="form-group mb-0" style="flex:1;min-width:180px">
+              <label class="form-label">Notes</label>
+              <input type="text" class="form-control" th:field="*{notes}" placeholder="Optional notes…" />
+            </div>
+
+            <button type="submit" class="btn btn-success" style="white-space:nowrap">
+              &#9989; Record Payment
+            </button>
+
+          </form>
+        </div>
+
+        <!-- Payment history table -->
+        <div th:if="${!#lists.isEmpty(billing.creditPayments)}">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">&#128203; Payment History</div>
+          <div class="table-wrap">
+            <table class="pharma-table payment-history-table">
+              <thead>
+                <tr>
+                  <th style="width:44px">#</th>
+                  <th>Date &amp; Time</th>
+                  <th>Mode</th>
+                  <th class="num">Amount (&#8377;)</th>
+                  <th>Notes</th>
+                  <th>Recorded By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="cp, i : ${billing.creditPayments}">
+                  <td style="font-weight:700;color:var(--text-muted)" th:text="${i.count}">1</td>
+                  <td style="font-size:12.5px" th:text="${#temporals.format(cp.paidAt,'dd MMM yyyy, hh:mm a')}">—</td>
+                  <td>
+                    <!-- Single-line classappend for payment mode badge -->
+                    <span class="pt-badge" th:classappend="${cp.paymentMode.name() == 'CASH' ? 'pt-badge-cash' : (cp.paymentMode.name() == 'UPI' ? 'pt-badge-upi' : 'pt-badge-card')}" th:text="${cp.paymentMode.name() == 'CASH' ? 'Cash' : (cp.paymentMode.name() == 'UPI' ? 'UPI' : 'Card')}">—</span>
+                  </td>
+                  <td class="num" style="font-weight:700;color:#15803d;font-family:var(--font-mono,monospace)">
+                    &#8377;<span th:text="${#numbers.formatDecimal(cp.amountPaid,1,2)}">0.00</span>
+                  </td>
+                  <td style="color:var(--text-muted);font-size:12.5px" th:text="${cp.notes ?: '—'}">—</td>
+                  <td style="font-size:12.5px" th:text="${cp.recordedBy != null ? cp.recordedBy.name : '—'}">—</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr style="background:#f8fafc;font-weight:700">
+                  <td colspan="3" style="text-align:right;font-size:12px;color:var(--text-muted)">Total Collected</td>
+                  <td class="num" style="color:#15803d;font-family:var(--font-mono,monospace)">
+                    &#8377;<span th:text="${#numbers.formatDecimal(billing.paidAmount,1,2)}">0.00</span>
+                  </td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- No payments yet -->
+        <div th:if="${#lists.isEmpty(billing.creditPayments) and billing.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}" style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">
+          No payments recorded yet. Use the form above to record the first payment.
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================================================================
+         MEDICINE ITEMS
+         ================================================================ -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <div class="card-title">&#128138; Medicine Items</div>
+        <span style="font-size:12px;color:var(--text-muted)" th:text="${billing.items.size()} + ' item(s)'">0</span>
+      </div>
+      <div class="table-wrap">
+        <table class="pharma-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th style="width:36px">#</th>
               <th>Medicine</th>
               <th>Batch No</th>
-              <th style="text-align:right">Qty</th>
-              <th style="text-align:right">Unit Price</th>
-              <th style="text-align:right">GST %</th>
-              <th style="text-align:right">Item Total</th>
-              <th style="text-align:right">GST Amt</th>
-              <th style="text-align:right">Row Total</th>
+              <th class="num">Qty</th>
+              <th class="num">Unit Price (&#8377;)</th>
+              <th class="num">GST %</th>
+              <th class="num">Item Total (&#8377;)</th>
+              <th class="num">GST Amt (&#8377;)</th>
+              <th class="num">CGST (&#8377;)</th>
+              <th class="num">SGST (&#8377;)</th>
+              <th class="num">Row Total (&#8377;)</th>
             </tr>
           </thead>
           <tbody>
-            <tr th:each="item, iStat : ${billing.items}">
-              <td th:text="${iStat.count}" style="color:var(--text-muted)">1</td>
-              <td><strong th:text="${item.medicineName ?: item.medicine?.name}">Medicine</strong></td>
-              <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)"
-                  th:text="${item.batchNo ?: '—'}">BATCH</td>
-              <td style="text-align:right" th:text="${item.quantity}">1</td>
-              <td style="text-align:right;font-family:var(--font-mono)">
-                ₹<span th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}">0.00</span>
-              </td>
-              <td style="text-align:right">
-                <span class="badge badge-info" th:text="${item.gstPercentage} + '%'">0%</span>
-              </td>
-              <td style="text-align:right;font-family:var(--font-mono)">
-                ₹<span th:text="${#numbers.formatDecimal(item.itemTotal, 1, 2)}">0.00</span>
-              </td>
-              <td style="text-align:right;font-family:var(--font-mono);color:var(--warning)">
-                ₹<span th:text="${#numbers.formatDecimal(item.gstAmount, 1, 2)}">0.00</span>
-              </td>
-              <td style="text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--primary)">
-                ₹<span th:text="${#numbers.formatDecimal(item.totalAmount, 1, 2)}">0.00</span>
-              </td>
+            <tr th:each="item, i : ${billing.items}">
+              <td style="color:#6b7280;font-weight:600" th:text="${i.count}">1</td>
+              <td style="font-weight:600" th:text="${item.medicineName}">—</td>
+              <td style="color:var(--text-muted);font-family:var(--font-mono,monospace);font-size:12px" th:text="${item.batchNo ?: '—'}">—</td>
+              <td class="num" th:text="${item.quantity}">0</td>
+              <td class="num">&#8377;<span th:text="${#numbers.formatDecimal(item.unitPrice,1,2)}">0.00</span></td>
+              <td class="num" th:text="${#numbers.formatDecimal(item.gstPercentage,1,2)} + '%'">0%</td>
+              <td class="num">&#8377;<span th:text="${#numbers.formatDecimal(item.itemTotal,1,2)}">0.00</span></td>
+              <td class="num" style="color:var(--warning,#f59e0b)">&#8377;<span th:text="${#numbers.formatDecimal(item.gstAmount,1,2)}">0.00</span></td>
+              <td class="num" style="color:#6366f1">&#8377;<span th:text="${#numbers.formatDecimal(item.cgst,1,2)}">0.00</span></td>
+              <td class="num" style="color:#6366f1">&#8377;<span th:text="${#numbers.formatDecimal(item.sgst,1,2)}">0.00</span></td>
+              <td class="num" style="font-weight:700">&#8377;<span th:text="${#numbers.formatDecimal(item.totalAmount,1,2)}">0.00</span></td>
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
 
-        <!-- Totals -->
-        <div style="display:flex;justify-content:flex-end">
-          <div class="invoice-totals">
-            <div class="invoice-total-row">
-              <span class="invoice-total-label">Subtotal (excl. GST)</span>
-              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.subtotal, 1, 2)}">0.00</span></span>
-            </div>
-            <div class="invoice-total-row">
-              <span class="invoice-total-label">CGST</span>
-              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.cgst, 1, 2)}">0.00</span></span>
-            </div>
-            <div class="invoice-total-row">
-              <span class="invoice-total-label">SGST</span>
-              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.sgst, 1, 2)}">0.00</span></span>
-            </div>
-            <div class="invoice-total-row">
-              <span class="invoice-total-label">Total GST</span>
-              <span class="invoice-total-value" style="color:var(--warning)">₹<span th:text="${#numbers.formatDecimal(billing.totalGst, 1, 2)}">0.00</span></span>
-            </div>
-            <div class="invoice-total-row" style="border-top:2px solid var(--border)">
-              <span>Grand Total</span>
-              <span class="invoice-total-value">₹<span th:text="${#numbers.formatDecimal(billing.grandTotal, 1, 2)}">0.00</span></span>
-            </div>
+    <!-- ================================================================
+         BILL SUMMARY
+         ================================================================ -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+      <div class="gst-summary" style="min-width:320px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">&#128202; Bill Summary</div>
+
+        <div class="gst-summary-row">
+          <span class="gst-summary-label">Subtotal (before GST)</span>
+          <span class="gst-summary-value">&#8377;<span th:text="${#numbers.formatDecimal(billing.subtotal,1,2)}">0.00</span></span>
+        </div>
+        <div class="gst-summary-row">
+          <span class="gst-summary-label">CGST (50% of GST)</span>
+          <span class="gst-summary-value">&#8377;<span th:text="${#numbers.formatDecimal(billing.cgst,1,2)}">0.00</span></span>
+        </div>
+        <div class="gst-summary-row">
+          <span class="gst-summary-label">SGST (50% of GST)</span>
+          <span class="gst-summary-value">&#8377;<span th:text="${#numbers.formatDecimal(billing.sgst,1,2)}">0.00</span></span>
+        </div>
+        <div class="gst-summary-row">
+          <span class="gst-summary-label">Total GST</span>
+          <span class="gst-summary-value">&#8377;<span th:text="${#numbers.formatDecimal(billing.totalGst,1,2)}">0.00</span></span>
+        </div>
+        <div class="gst-summary-row grand-total">
+          <span>Grand Total</span>
+          <span>&#8377;<span th:text="${#numbers.formatDecimal(billing.grandTotal,1,2)}">0.00</span></span>
+        </div>
+
+        <!-- Credit split -->
+        <div th:if="${billing.isCreditBill()}" style="margin-top:10px;border-top:1.5px dashed #fde68a;padding-top:10px">
+          <div class="gst-summary-row">
+            <span class="gst-summary-label" style="color:#15803d">Amount Paid</span>
+            <span class="gst-summary-value" style="color:#15803d;font-weight:700">&#8377;<span th:text="${#numbers.formatDecimal(billing.paidAmount,1,2)}">0.00</span></span>
+          </div>
+          <div class="gst-summary-row">
+            <span class="gst-summary-label" style="color:#dc2626">Balance Due</span>
+            <span class="gst-summary-value" style="color:#dc2626;font-weight:700">&#8377;<span th:text="${#numbers.formatDecimal(billing.balanceDue,1,2)}">0.00</span></span>
           </div>
         </div>
 
-        <!-- Notes -->
-        <div th:if="${billing.notes != null and !billing.notes.isBlank()}"
-             style="margin-top:24px;padding:14px 18px;background:#f8fafc;border-left:4px solid var(--primary);border-radius:6px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">📝 Notes</div>
-          <div style="font-size:14px;color:var(--text)" th:text="${billing.notes}"></div>
-        </div>
-
-      </div><!-- /invoice-body -->
-
-      <!-- Footer -->
-      <div class="invoice-footer">
-        <span th:text="${pharmacy.invoiceFooter ?: 'Thank you for choosing ' + pharmacy.name + '. This is a computer-generated invoice and does not require a signature.'}"></span>
       </div>
+    </div>
 
-    </div><!-- /invoice-wrap -->
-
-  </div>
-</div>
+  </div><!-- end .page-content -->
+</div><!-- end .main-wrapper -->
 
 </body>
 </html>
