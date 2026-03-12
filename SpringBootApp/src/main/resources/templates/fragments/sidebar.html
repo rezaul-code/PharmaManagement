@@ -25,16 +25,12 @@
   <!-- Nav -->
   <nav class="sidebar-nav">
 
-    <!-- MAIN -->
-    <div class="nav-section-label">Main</div>
     <a href="/dashboard"
        th:classappend="${activePage == 'dashboard'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">🏠</span> Dashboard
     </a>
 
-    <!-- MEDICINE -->
-    <div class="nav-section-label">Medicine</div>
     <a href="/medicine/show"
        th:classappend="${activePage == 'medicines'} ? ' active' : ''"
        class="nav-item">
@@ -49,47 +45,43 @@
       </a>
     </th:block>
 
-    <!-- BILLING -->
-    <div class="nav-section-label">Billing</div>
     <a href="/billing/new"
        th:classappend="${activePage == 'new-bill'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">🧾</span> New Bill
     </a>
+
     <a href="/billing/list"
        th:classappend="${activePage == 'bill-history'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">📋</span> Bill History
     </a>
 
-    <!-- ANALYTICS — 3 separate pages -->
-    <div class="nav-section-label">Analytics</div>
     <a href="/sales-analytics"
        th:classappend="${activePage == 'sales-analytics'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">📊</span> Sales Analytics
     </a>
+
     <a href="/inventory-analytics"
        th:classappend="${activePage == 'inventory-analytics'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">📦</span> Inventory Analytics
     </a>
+
     <a href="/monthly-trends"
        th:classappend="${activePage == 'monthly-trends'} ? ' active' : ''"
        class="nav-item">
       <span class="nav-icon">📅</span> Monthly Trends
     </a>
 
-    <!-- STAFF + ADMIN — OWNER only -->
     <th:block th:if="${session.loggedInUser?.isOwner()}">
-      <div class="nav-section-label">Staff</div>
       <a href="/staff"
          th:classappend="${activePage == 'staff'} ? ' active' : ''"
          class="nav-item">
         <span class="nav-icon">👥</span> Manage Staff
       </a>
 
-      <div class="nav-section-label">Admin</div>
       <a href="/pharmacy/settings"
          th:classappend="${activePage == 'settings'} ? ' active' : ''"
          class="nav-item">
@@ -117,8 +109,7 @@
 
           <span th:with="r=${session.loggedInUser?.role?.name()}"
                 class="role-badge"
-                th:classappend="${r == 'OWNER'} ? 'role-owner' :
-                                (${r == 'PHARMACIST'} ? 'role-pharmacist' : 'role-staff')"
+                th:classappend="${r == 'OWNER' ? 'role-owner' : (r == 'PHARMACIST' ? 'role-pharmacist' : 'role-staff')}"
                 th:text="${session.loggedInUser?.role ?: 'STAFF'}">STAFF</span>
         </div>
 
