@@ -38,7 +38,7 @@
     .pp-value { font-size:13px;font-weight:600;color:#e2e8f0;line-height:1.4; }
     .pp-value.mono { font-family:var(--font-mono,monospace);letter-spacing:.03em;color:#34d399; }
 
-    /* ── Topbar pharmacy pill ───────────────────────────────────────── */
+    /* ── Topbar pharmacy pill ───────────────────────────────────── */
     .topbar-pharmacy {
       display:flex;align-items:center;gap:8px;
       margin-left:auto;margin-right:16px;
@@ -49,195 +49,137 @@
     .topbar-pharmacy-dot { width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.25); }
     .topbar-pharmacy-name { font-size:13px;font-weight:700;color:#34d399;white-space:nowrap; }
 
-    /* ── Clickable stat card ────────────────────────────────────────── */
+    /* ── Clickable stat card ────────────────────────────────────── */
     .stat-card {
-      cursor: pointer;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-      position: relative;
-      overflow: hidden;
+      cursor:pointer; text-decoration:none;
+      display:flex; align-items:center; gap:16px;
+      transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      position:relative; overflow:hidden;
     }
     .stat-card::after {
-      content: '→';
-      position: absolute;
-      bottom: 10px;
-      right: 14px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted, #94a3b8);
-      opacity: 0;
-      transform: translateX(-6px);
-      transition: opacity .18s, transform .18s;
+      content:'→'; position:absolute; bottom:10px; right:14px;
+      font-size:13px; font-weight:700; color:var(--text-muted,#94a3b8);
+      opacity:0; transform:translateX(-6px);
+      transition:opacity .18s, transform .18s;
     }
-    .stat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 28px rgba(0,0,0,.12);
-      border-color: var(--primary, #0ea5e9);
-    }
-    .stat-card:hover::after {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    .stat-card:active { transform: translateY(-1px); }
-
-    .stat-card.card-medicines:hover  { border-color: #0ea5e9; box-shadow: 0 8px 28px rgba(14,165,233,.15); }
-    .stat-card.card-lowstock:hover   { border-color: #f87171; box-shadow: 0 8px 28px rgba(248,113,113,.15); }
-    .stat-card.card-expiring:hover   { border-color: #fbbf24; box-shadow: 0 8px 28px rgba(251,191,36,.15); }
-    .stat-card.card-sales:hover      { border-color: #34d399; box-shadow: 0 8px 28px rgba(52,211,153,.15); }
-
+    .stat-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,.12); border-color:var(--primary,#0ea5e9); }
+    .stat-card:hover::after { opacity:1; transform:translateX(0); }
+    .stat-card:active { transform:translateY(-1px); }
+    .stat-card.card-medicines:hover { border-color:#0ea5e9; box-shadow:0 8px 28px rgba(14,165,233,.15); }
+    .stat-card.card-lowstock:hover  { border-color:#f87171; box-shadow:0 8px 28px rgba(248,113,113,.15); }
+    .stat-card.card-expiring:hover  { border-color:#fbbf24; box-shadow:0 8px 28px rgba(251,191,36,.15); }
+    .stat-card.card-sales:hover     { border-color:#34d399; box-shadow:0 8px 28px rgba(52,211,153,.15); }
     .stat-card .click-hint {
-      position: absolute;
-      top: 10px; right: 12px;
-      font-size: 10px; font-weight: 600;
-      color: var(--text-muted, #94a3b8);
-      background: rgba(0,0,0,.04);
-      padding: 2px 7px; border-radius: 20px;
-      border: 1px solid var(--border, #e2e8f0);
-      opacity: 0;
-      transition: opacity .18s;
-      pointer-events: none;
+      position:absolute; top:10px; right:12px;
+      font-size:10px; font-weight:600; color:var(--text-muted,#94a3b8);
+      background:rgba(0,0,0,.04); padding:2px 7px; border-radius:20px;
+      border:1px solid var(--border,#e2e8f0);
+      opacity:0; transition:opacity .18s; pointer-events:none;
     }
-    .stat-card:hover .click-hint { opacity: 1; }
-
+    .stat-card:hover .click-hint { opacity:1; }
     .stat-danger .stat-icon::after {
-      content: '';
-      position: absolute;
-      top: -3px; right: -3px;
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: #ef4444;
-      box-shadow: 0 0 0 0 rgba(239,68,68,.4);
-      animation: pulse-dot 1.8s ease infinite;
+      content:''; position:absolute; top:-3px; right:-3px;
+      width:10px; height:10px; border-radius:50%;
+      background:#ef4444; box-shadow:0 0 0 0 rgba(239,68,68,.4);
+      animation:pulse-dot 1.8s ease infinite;
     }
-    .stat-icon { position: relative; }
+    .stat-icon { position:relative; }
     @keyframes pulse-dot {
-      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
-      70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
-      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+      0%  { box-shadow:0 0 0 0 rgba(239,68,68,.4); }
+      70% { box-shadow:0 0 0 8px rgba(239,68,68,0); }
+      100%{ box-shadow:0 0 0 0 rgba(239,68,68,0); }
     }
 
-    /* ── Chart cards ────────────────────────────────────────────────── */
+    /* ── Chart grid ─────────────────────────────────────────────── */
     .chart-grid {
-      display: grid;
-      grid-template-columns: 1.65fr 1fr;
-      gap: 20px;
-      margin-top: 0;
+      display:grid;
+      grid-template-columns:1.65fr 1fr;
+      gap:20px;
     }
-
     .chart-card {
-      background: var(--card-bg, #fff);
-      border: 1px solid var(--border, #e2e8f0);
-      border-radius: var(--radius, 12px);
-      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.08));
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      background:var(--card-bg,#fff);
+      border:1px solid var(--border,#e2e8f0);
+      border-radius:var(--radius,12px);
+      box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.08));
+      overflow:hidden; display:flex; flex-direction:column;
     }
-
     .chart-card-header {
-      padding: 18px 22px 14px;
-      border-bottom: 1px solid var(--border, #e2e8f0);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-shrink: 0;
+      padding:16px 22px 12px;
+      border-bottom:1px solid var(--border,#e2e8f0);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-shrink:0; flex-wrap:wrap;
+    }
+    .chart-card-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; color:var(--text,#1e293b); }
+    .chart-card-sub   { font-size:11.5px; color:var(--text-muted,#64748b); margin-top:1px; }
+    .chart-card-body  { padding:20px 22px 22px; flex:1; display:flex; flex-direction:column; justify-content:center; }
+
+    /* ── Period toggle ───────────────────────────────────────────── */
+    .period-toggle {
+      display:flex; align-items:center; gap:3px;
+      background:rgba(0,0,0,.04);
+      border:1px solid var(--border,#e2e8f0);
+      border-radius:999px;
+      padding:3px;
+    }
+    .period-btn {
+      font-size:11.5px; font-weight:600;
+      padding:4px 12px;
+      border-radius:999px; border:none; cursor:pointer;
+      color:var(--text-muted,#64748b); background:transparent;
+      transition:background .18s, color .18s, box-shadow .18s;
+      white-space:nowrap; line-height:1.4;
+    }
+    .period-btn:hover:not(.active) {
+      background:rgba(13,148,136,.08);
+      color:var(--primary,#0d9488);
+    }
+    .period-btn.active {
+      background:#fff;
+      color:var(--primary,#0d9488);
+      box-shadow:0 1px 4px rgba(0,0,0,.12);
     }
 
-    .chart-card-title {
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text, #1e293b);
+    /* ── Canvas wrapper + loading shimmer ───────────────────────── */
+    .chart-area-wrap { position:relative; width:100%; height:210px; }
+    .chart-area-wrap.loading::after {
+      content:'';
+      position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.65) 50%,transparent 100%);
+      background-size:200% 100%;
+      animation:shimmer .9s infinite;
+      border-radius:8px; pointer-events:none;
+    }
+    @keyframes shimmer {
+      0%   { background-position:200% 0; }
+      100% { background-position:-200% 0; }
     }
 
-    .chart-card-sub {
-      font-size: 11.5px;
-      color: var(--text-muted, #64748b);
-      margin-top: 1px;
+    /* ── Chart summary strip ─────────────────────────────────────── */
+    .chart-summary {
+      display:flex; gap:24px;
+      margin-top:14px; padding-top:14px;
+      border-top:1px solid var(--border,#e2e8f0);
     }
+    .chart-summary-item  { display:flex; flex-direction:column; gap:2px; }
+    .chart-summary-label { font-size:10.5px; font-weight:600; color:var(--text-muted,#64748b); text-transform:uppercase; letter-spacing:.04em; }
+    .chart-summary-value { font-size:15px; font-weight:800; color:var(--text,#1e293b); font-family:var(--font-mono,monospace); }
+    .chart-summary-value.positive { color:#22c55e; }
 
-    .chart-card-body {
-      padding: 20px 22px 22px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    /* Area chart glow */
-    .chart-area-wrap {
-      position: relative;
-      width: 100%;
-      height: 210px;
-    }
-
-    /* Donut chart layout */
+    /* ── Donut ───────────────────────────────────────────────────── */
     .chart-donut-wrap {
-      position: relative;
-      width: 100%;
-      height: 180px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position:relative; width:100%; height:180px;
+      display:flex; align-items:center; justify-content:center;
     }
+    .donut-legend { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-top:18px; }
+    .donut-legend-item { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text,#1e293b); }
+    .donut-legend-dot   { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .donut-legend-label { color:var(--text-muted,#64748b); font-size:11.5px; }
+    .donut-legend-count { font-weight:700; font-size:13px; margin-left:auto; font-family:var(--font-mono,monospace); }
+    .donut-center-text  { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+    .donut-center-total { font-size:22px; font-weight:800; color:var(--text,#1e293b); line-height:1; }
+    .donut-center-label { font-size:10px; font-weight:600; color:var(--text-muted,#64748b); text-transform:uppercase; letter-spacing:.04em; margin-top:3px; }
 
-    .donut-legend {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px 16px;
-      margin-top: 18px;
-    }
-
-    .donut-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12.5px;
-      color: var(--text, #1e293b);
-    }
-
-    .donut-legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .donut-legend-label { color: var(--text-muted, #64748b); font-size: 11.5px; }
-    .donut-legend-count { font-weight: 700; font-size: 13px; margin-left: auto; font-family: var(--font-mono, monospace); }
-
-    /* Sales chart period badge */
-    .period-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: rgba(13,148,136,.08);
-      color: var(--primary, #0d9488);
-      border: 1px solid rgba(13,148,136,.18);
-    }
-
-    /* Center text on donut */
-    .donut-center-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      pointer-events: none;
-    }
-    .donut-center-total { font-size: 22px; font-weight: 800; color: var(--text, #1e293b); line-height: 1; }
-    .donut-center-label { font-size: 10px; font-weight: 600; color: var(--text-muted, #64748b); text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
-
-    @media (max-width: 900px) {
-      .chart-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width:900px) { .chart-grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -281,7 +223,7 @@
 
   <div class="page-content">
 
-    <!-- ── STAT CARDS ─────────────────────────────────────────────── -->
+    <!-- ── STAT CARDS ──────────────────────────────────────────── -->
     <div class="stat-grid">
 
       <a href="/medicine/show" class="stat-card card-medicines" style="text-decoration:none;color:inherit;">
@@ -337,26 +279,50 @@
 
     </div>
 
-    <!-- ── CHARTS ROW ──────────────────────────────────────────────── -->
+    <!-- ── CHARTS ROW ──────────────────────────────────────────── -->
     <div class="chart-grid">
 
-      <!-- Sales Trend Area Chart -->
+      <!-- ① Sales Trend Area Chart -->
       <div class="chart-card">
         <div class="chart-card-header">
           <div>
             <div class="chart-card-title">📈 Sales Trend</div>
-            <div class="chart-card-sub">Revenue over the last 7 days</div>
+            <div class="chart-card-sub" id="salesChartSub">Revenue over the last 7 days</div>
           </div>
-          <span class="period-badge">Last 7 Days</span>
+
+          <!-- Period toggle pill -->
+          <div class="period-toggle" role="group" aria-label="Select period">
+            <button class="period-btn active" data-period="7d">7 Days</button>
+            <button class="period-btn"        data-period="30d">30 Days</button>
+            <button class="period-btn"        data-period="90d">90 Days</button>
+            <button class="period-btn"        data-period="1y">1 Year</button>
+          </div>
         </div>
+
         <div class="chart-card-body">
-          <div class="chart-area-wrap">
+          <div class="chart-area-wrap" id="salesChartWrap">
             <canvas id="salesTrendChart"></canvas>
+          </div>
+
+          <!-- Summary stats strip -->
+          <div class="chart-summary">
+            <div class="chart-summary-item">
+              <span class="chart-summary-label">Total Revenue</span>
+              <span class="chart-summary-value positive" id="summaryTotal">₹0.00</span>
+            </div>
+            <div class="chart-summary-item">
+              <span class="chart-summary-label">Peak</span>
+              <span class="chart-summary-value" id="summaryPeak">—</span>
+            </div>
+            <div class="chart-summary-item">
+              <span class="chart-summary-label">Average</span>
+              <span class="chart-summary-value" id="summaryAvg">₹0</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Stock Health Donut Chart -->
+      <!-- ② Stock Health Donut -->
       <div class="chart-card">
         <div class="chart-card-header">
           <div>
@@ -372,76 +338,83 @@
               <div class="donut-center-label">Total SKUs</div>
             </div>
           </div>
-
-          <!-- Legend -->
-          <div class="donut-legend" id="stockLegend">
-            <!-- Populated by JS -->
-          </div>
+          <div class="donut-legend" id="stockLegend"></div>
         </div>
       </div>
 
-    </div>
-    <!-- end chart-grid -->
+    </div><!-- end chart-grid -->
 
   </div><!-- end page-content -->
 </div><!-- end main-wrapper -->
 
-<!--
-  Thymeleaf inlines: pass Java-side JSON into JS variables.
-  th:inline="javascript" lets us write [[${expr}]] inside <script>.
--->
+<!-- Thymeleaf injects initial 7-day data + stock data as JS variables -->
 <script th:inline="javascript">
   /*<![CDATA[*/
-  const SALES_DATA  = /*[[${salesChartJson}]]*/ '[]';
-  const STOCK_DATA  = /*[[${stockChartJson}]]*/ '{"outOfStock":0,"critical":0,"low":0,"healthy":0}';
+  const SALES_DATA_INIT = /*[[${salesChartJson}]]*/ '[]';
+  const STOCK_DATA      = /*[[${stockChartJson}]]*/ '{"outOfStock":0,"critical":0,"low":0,"healthy":0}';
   /*]]>*/
 </script>
 
 <script>
 (function () {
-  /* ── 1. Parse server data ─────────────────────────────────────── */
-  const salesRaw  = JSON.parse(SALES_DATA);   // [ {label:"Mon 9", revenue:1234.5}, ... ]
-  const stockRaw  = JSON.parse(STOCK_DATA);   // { outOfStock, critical, low, healthy }
 
-  /* ── 2. Sales Trend Area Chart ────────────────────────────────── */
-  const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+  /* ── Formatting helpers ────────────────────────────────────────── */
+  const fmtInr = v =>
+    '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
 
-  // Gradient fill
-  const gradient = salesCtx.createLinearGradient(0, 0, 0, 210);
-  gradient.addColorStop(0,   'rgba(13,148,136,0.35)');
-  gradient.addColorStop(0.6, 'rgba(13,148,136,0.08)');
-  gradient.addColorStop(1,   'rgba(13,148,136,0.00)');
+  const fmtShort = v => {
+    const n = Number(v);
+    if (n >= 1e7)  return '₹' + (n/1e7).toFixed(2) + 'Cr';
+    if (n >= 1e5)  return '₹' + (n/1e5).toFixed(1)  + 'L';
+    if (n >= 1000) return '₹' + (n/1000).toFixed(1)  + 'k';
+    return '₹' + n.toFixed(0);
+  };
 
-  new Chart(salesCtx, {
+  const PERIOD_LABELS = {
+    '7d':  'Revenue over the last 7 days',
+    '30d': 'Revenue over the last 30 days',
+    '90d': 'Revenue over the last 13 weeks',
+    '1y':  'Revenue over the last 12 months',
+  };
+
+  /* ══════════════════════════════════════════════════════════
+     SALES TREND CHART
+  ══════════════════════════════════════════════════════════ */
+  const salesCtx  = document.getElementById('salesTrendChart').getContext('2d');
+  const salesWrap = document.getElementById('salesChartWrap');
+
+  function makeGradient() {
+    const g = salesCtx.createLinearGradient(0, 0, 0, 210);
+    g.addColorStop(0,   'rgba(13,148,136,0.35)');
+    g.addColorStop(0.6, 'rgba(13,148,136,0.08)');
+    g.addColorStop(1,   'rgba(13,148,136,0.00)');
+    return g;
+  }
+
+  const salesChart = new Chart(salesCtx, {
     type: 'line',
     data: {
-      labels: salesRaw.map(d => d.label),
+      labels: [],
       datasets: [{
-        label: 'Revenue (₹)',
-        data:  salesRaw.map(d => d.revenue),
-        fill:  true,
-        backgroundColor: gradient,
-        borderColor:     '#0d9488',
-        borderWidth:     2.5,
-        pointRadius:     4,
-        pointHoverRadius: 7,
-        pointBackgroundColor: '#0d9488',
+        label:               'Revenue (₹)',
+        data:                [],
+        fill:                true,
+        backgroundColor:     makeGradient(),
+        borderColor:         '#0d9488',
+        borderWidth:         2.5,
+        pointRadius:         4,
+        pointHoverRadius:    7,
+        pointBackgroundColor:'#0d9488',
         pointBorderColor:    '#fff',
         pointBorderWidth:    2,
-        tension: 0.42,
-        /* glow via shadow */
-        shadowColor:  'rgba(13,148,136,0.45)',
-        shadowBlur:   12,
+        tension:             0.42,
       }]
     },
     options: {
-      responsive: true,
+      responsive:          true,
       maintainAspectRatio: false,
-      animation: {
-        duration: 900,
-        easing: 'easeOutQuart',
-      },
-      interaction: { intersect: false, mode: 'index' },
+      animation:           { duration: 700, easing: 'easeOutQuart' },
+      interaction:         { intersect: false, mode: 'index' },
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -451,129 +424,155 @@
           borderColor:     'rgba(255,255,255,.1)',
           borderWidth:     1,
           padding:         10,
-          callbacks: {
-            label: ctx => ` ₹${Number(ctx.raw).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`
-          }
+          callbacks: { label: ctx => ' ' + fmtInr(ctx.raw) }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          ticks: {
-            color: '#94a3b8',
-            font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" }
-          },
+          grid:   { display: false },
+          ticks:  { color:'#94a3b8', font:{ size:11, family:"'Plus Jakarta Sans',sans-serif" }, maxRotation:45 },
           border: { display: false }
         },
         y: {
-          grid: {
-            color: 'rgba(0,0,0,0.05)',
-            drawBorder: false
-          },
-          ticks: {
-            color: '#94a3b8',
-            font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
-            callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v)
+          grid:   { color:'rgba(0,0,0,.05)' },
+          ticks:  {
+            color:'#94a3b8',
+            font: { size:11, family:"'Plus Jakarta Sans',sans-serif" },
+            callback: v => fmtShort(v)
           },
           border: { display: false }
         }
       }
     },
     plugins: [{
-      /* Custom glow line plugin */
       id: 'glowLine',
-      beforeDatasetDraw(chart, args) {
-        const ctx = chart.ctx;
-        ctx.save();
-        ctx.shadowColor = 'rgba(13,148,136,0.5)';
-        ctx.shadowBlur  = 14;
-      },
-      afterDatasetDraw(chart) {
-        chart.ctx.restore();
-      }
+      beforeDatasetDraw(chart) { chart.ctx.save(); chart.ctx.shadowColor='rgba(13,148,136,.5)'; chart.ctx.shadowBlur=14; },
+      afterDatasetDraw(chart)  { chart.ctx.restore(); }
     }]
   });
 
-  /* ── 3. Stock Health Donut Chart ──────────────────────────────── */
-  const STOCK_COLORS = {
-    outOfStock: { bg: '#fee2e2', border: '#ef4444', label: 'Out of Stock', emoji: '🔴' },
-    critical:   { bg: '#fef3c7', border: '#f59e0b', label: 'Critical (≤3)', emoji: '🟠' },
-    low:        { bg: '#dbeafe', border: '#3b82f6', label: 'Low (4–10)',    emoji: '🟡' },
-    healthy:    { bg: '#dcfce7', border: '#22c55e', label: 'Healthy',       emoji: '🟢' },
+  /* ── Refresh chart data and summary strip ── */
+  function updateSalesChart(dataArr) {
+    const revenues = dataArr.map(d => Number(d.revenue));
+
+    salesChart.data.labels                      = dataArr.map(d => d.label);
+    salesChart.data.datasets[0].data            = revenues;
+    salesChart.data.datasets[0].backgroundColor = makeGradient();
+    salesChart.update('active');
+
+    // Summary stats
+    const total   = revenues.reduce((a, b) => a + b, 0);
+    const nonZero = revenues.filter(v => v > 0);
+    const avg     = nonZero.length ? total / nonZero.length : 0;
+    const maxVal  = revenues.length ? Math.max(...revenues) : 0;
+    const peakIdx = revenues.indexOf(maxVal);
+
+    document.getElementById('summaryTotal').textContent = fmtInr(total);
+    document.getElementById('summaryAvg').textContent   = fmtShort(avg);
+    document.getElementById('summaryPeak').textContent  =
+      maxVal > 0 ? dataArr[peakIdx].label + '  ' + fmtShort(maxVal) : '—';
+  }
+
+  /* ── Load on page open with Thymeleaf-injected 7-day data ── */
+  updateSalesChart(JSON.parse(SALES_DATA_INIT));
+
+  /* ── Period button handler ── */
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', async function () {
+
+      // Toggle active class
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      const period = this.dataset.period;
+      document.getElementById('salesChartSub').textContent = PERIOD_LABELS[period] ?? '';
+
+      // Show shimmer while loading
+      salesWrap.classList.add('loading');
+
+      try {
+        const res  = await fetch('/api/dashboard/sales-chart?period=' + period);
+        const data = await res.json();
+        updateSalesChart(data);
+      } catch (err) {
+        console.error('Sales chart fetch failed:', err);
+      } finally {
+        salesWrap.classList.remove('loading');
+      }
+    });
+  });
+
+  /* ══════════════════════════════════════════════════════════
+     STOCK HEALTH DONUT
+  ══════════════════════════════════════════════════════════ */
+  const stockRaw = JSON.parse(STOCK_DATA);
+
+  const STOCK_CFG = {
+    outOfStock: { color:'#ef4444', label:'Out of Stock'  },
+    critical:   { color:'#f59e0b', label:'Critical (≤3)' },
+    low:        { color:'#3b82f6', label:'Low (4–10)'    },
+    healthy:    { color:'#22c55e', label:'Healthy'        },
   };
 
-  const stockKeys    = ['outOfStock', 'critical', 'low', 'healthy'];
-  const stockValues  = stockKeys.map(k => stockRaw[k] || 0);
-  const stockColors  = stockKeys.map(k => STOCK_COLORS[k].border);
-  const stockBg      = stockKeys.map(k => STOCK_COLORS[k].bg);
-  const stockLabels  = stockKeys.map(k => STOCK_COLORS[k].label);
+  const stockKeys   = ['outOfStock','critical','low','healthy'];
+  const stockValues = stockKeys.map(k => stockRaw[k] || 0);
+  const stockColors = stockKeys.map(k => STOCK_CFG[k].color);
 
-  const donutCtx = document.getElementById('stockHealthChart').getContext('2d');
-
-  new Chart(donutCtx, {
+  new Chart(document.getElementById('stockHealthChart').getContext('2d'), {
     type: 'doughnut',
     data: {
-      labels:   stockLabels,
+      labels:   stockKeys.map(k => STOCK_CFG[k].label),
       datasets: [{
         data:            stockValues,
-        backgroundColor: stockColors.map(c => c + 'cc'),  // slight transparency
+        backgroundColor: stockColors.map(c => c + 'cc'),
         borderColor:     stockColors,
         borderWidth:     2,
         hoverOffset:     8,
-        hoverBorderWidth: 3,
+        hoverBorderWidth:3,
       }]
     },
     options: {
-      responsive:          true,
-      maintainAspectRatio: false,
-      cutout:              '68%',
-      animation: {
-        animateRotate: true,
-        duration:      900,
-        easing:        'easeOutQuart',
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e293b',
-          titleColor:      '#94a3b8',
-          bodyColor:       '#f1f5f9',
-          borderColor:     'rgba(255,255,255,.1)',
-          borderWidth:     1,
-          padding:         10,
-          callbacks: {
-            label: ctx => ` ${ctx.parsed} medicines`
-          }
+      responsive:true, maintainAspectRatio:false,
+      cutout:'68%',
+      animation:{ animateRotate:true, duration:900, easing:'easeOutQuart' },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#1e293b', titleColor:'#94a3b8',
+          bodyColor:'#f1f5f9', borderColor:'rgba(255,255,255,.1)',
+          borderWidth:1, padding:10,
+          callbacks:{ label: ctx => ' ' + ctx.parsed + ' medicines' }
         }
       }
     }
   });
 
-  /* ── 4. Build legend dynamically ─────────────────────────────── */
+  /* ── Donut legend ── */
   const legend = document.getElementById('stockLegend');
   stockKeys.forEach((k, i) => {
-    const cfg  = STOCK_COLORS[k];
+    const cfg  = STOCK_CFG[k];
     const item = document.createElement('div');
     item.className = 'donut-legend-item';
     item.innerHTML = `
-      <span class="donut-legend-dot" style="background:${cfg.border}"></span>
+      <span class="donut-legend-dot"   style="background:${cfg.color}"></span>
       <span class="donut-legend-label">${cfg.label}</span>
-      <span class="donut-legend-count">${stockValues[i]}</span>
-    `;
+      <span class="donut-legend-count">${stockValues[i]}</span>`;
     legend.appendChild(item);
   });
 
-  /* ── 5. Pharmacy overlay ──────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════
+     PHARMACY OVERLAY
+  ══════════════════════════════════════════════════════════ */
   const overlay  = document.getElementById('pharmacyOverlay');
   const trigger  = document.getElementById('pharmacyTrigger');
   const backdrop = document.getElementById('pharmacyBackdrop');
   const closeBtn = document.getElementById('pharmacyClose');
-  function openPanel()  { overlay.classList.add('open'); }
-  function closePanel() { overlay.classList.remove('open'); }
+  const openPanel  = () => overlay.classList.add('open');
+  const closePanel = () => overlay.classList.remove('open');
   if (trigger)  trigger.addEventListener('click', openPanel);
   if (backdrop) backdrop.addEventListener('click', closePanel);
   if (closeBtn) closeBtn.addEventListener('click', closePanel);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+  document.addEventListener('keydown', e => { if (e.key==='Escape') closePanel(); });
 
 })();
 </script>
