@@ -46,7 +46,7 @@
 <body>
 
 <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
-<div th:replace="~{fragments/sidebar :: sidebar(activePage='billing-history')}"></div>
+<div th:replace="~{fragments/sidebar :: sidebar(activePage='bill-history')}"></div>
 
 <!-- ── Main ─────────────────────────────────────────────────────────── -->
 <div class="main-wrapper">
@@ -145,15 +145,12 @@
               <td style="color:var(--text-muted);font-size:12.5px"
                   th:text="${#temporals.format(bill.createdAt,'dd MMM yyyy, hh:mm a')}">—</td>
 
-              <!-- Payment type -->
+              <!-- Payment type — single ${} wrapping the entire ternary chain -->
               <td>
                 <span class="pt-badge"
-                  th:classappend="${bill.paymentType.name() == 'CASH'}   ? 'pt-badge-cash'   :
-                                   ${bill.paymentType.name() == 'UPI'}   ? 'pt-badge-upi'    :
-                                   ${bill.paymentType.name() == 'CARD'}  ? 'pt-badge-card'   : 'pt-badge-credit'"
-                  th:text="${bill.paymentType.name() == 'CASH'   ? '💵 Cash'   :
-                             bill.paymentType.name() == 'UPI'    ? '📱 UPI'    :
-                             bill.paymentType.name() == 'CARD'   ? '💳 Card'   : '🤝 Credit'}">—</span>
+                  th:with="pt=${bill.paymentType.name()}"
+                  th:classappend="${pt == 'CASH' ? 'pt-badge-cash' : pt == 'UPI' ? 'pt-badge-upi' : pt == 'CARD' ? 'pt-badge-card' : 'pt-badge-credit'}"
+                  th:text="${pt == 'CASH' ? '💵 Cash' : pt == 'UPI' ? '📱 UPI' : pt == 'CARD' ? '💳 Card' : '🤝 Credit'}">—</span>
               </td>
 
               <!-- Subtotal -->
@@ -179,18 +176,12 @@
                       style="color:var(--text-muted)">—</span>
               </td>
 
-              <!-- Status -->
+              <!-- Status — single ${} wrapping the entire ternary chain -->
               <td>
                 <span class="badge"
-                  th:classappend="${bill.status.name() == 'PAID'}            ? 'badge-success'        :
-                                   ${bill.status.name() == 'CREDIT_CLEARED'} ? 'badge-credit-cleared' :
-                                   ${bill.status.name() == 'CREDIT_PARTIAL'} ? 'badge-credit-partial' :
-                                   ${bill.status.name() == 'CREDIT_PENDING'} ? 'badge-credit-pending' :
-                                   ${bill.status.name() == 'CANCELLED'}      ? 'badge-danger'         : 'badge-warning'"
-                  th:text="${bill.status.name() == 'CREDIT_PENDING' ? 'Credit Pending'  :
-                             bill.status.name() == 'CREDIT_PARTIAL' ? 'Credit Partial'  :
-                             bill.status.name() == 'CREDIT_CLEARED' ? 'Credit Cleared'  :
-                             bill.status}">—</span>
+                  th:with="st=${bill.status.name()}"
+                  th:classappend="${st == 'PAID' ? 'badge-success' : st == 'CREDIT_CLEARED' ? 'badge-credit-cleared' : st == 'CREDIT_PARTIAL' ? 'badge-credit-partial' : st == 'CREDIT_PENDING' ? 'badge-credit-pending' : st == 'CANCELLED' ? 'badge-danger' : 'badge-warning'}"
+                  th:text="${st == 'CREDIT_PENDING' ? 'Credit Pending' : st == 'CREDIT_PARTIAL' ? 'Credit Partial' : st == 'CREDIT_CLEARED' ? 'Credit Cleared' : bill.status}">—</span>
               </td>
 
               <!-- Actions -->
