@@ -19,8 +19,12 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
+import com.myspringboot.SpringBootApp.repo.BillingRepository;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+
 import java.util.Optional;
 
 @Controller
@@ -30,6 +34,7 @@ public class BillingController {
     @Autowired private BillingService        billingService;
     @Autowired private MedicineService       medicineService;
     @Autowired private TenantPharmacyService tenantPharmacyService;
+    @Autowired private BillingRepository billingRepository;
 
     // ── Guard ──────────────────────────────────────────────────────────
 
@@ -175,4 +180,45 @@ public class BillingController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+    
+ // ── Today's Sales Page ───────────────────────────────────────────────
+    @GetMapping("/today")
+    public String todaySalesPage(HttpSession session, Model model, RedirectAttributes ra) {
+        User user = requireLoggedIn(session, ra);
+        if (user == null) return "redirect:/login";
+     
+        Long pharmacyId = user.getPharmacy().getId();
+        LocalDate today      = LocalDate.now();
+        LocalDateTime start  = today.atStartOfDay();
+        LocalDateTime end    = today.atTime(23, 59, 59);
+     
+        List<Billing> bills = billingRepository
+            .findByPharmacyIdAndCreatedAtBetweenOrderByCreatedAtDesc(pharmacyId, start, end);
+     
+        BigDecimal todayTotal = bills.stream()
+            .map(Billing::getGrandTotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+     
+        BigDecimal todayGst = bills.stream()
+            .map(Billing::getTotalGst)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+     
+        BigDecimal pendingBalance = bills.stream()
+            .filter(b -> b.isCreditBill() && b.getBalanceDue().compareTo(BigDecimal.ZERO) > 0)
+            .map(Billing::getBalanceDue)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+     
+        long creditCount = bills.stream().filter(Billing::isCreditBill).count();
+     
+        model.addAttribute("bills",          bills);
+        model.addAttribute("today",          today);
+        model.addAttribute("todayTotal",     todayTotal);
+        model.addAttribute("todayGst",       todayGst);
+        model.addAttribute("pendingBalance", pendingBalance);
+        model.addAttribute("creditCount",    creditCount);
+        model.addAttribute("currentUser",    user);
+        return "pages/today_sales";
+    }
 }
+
+

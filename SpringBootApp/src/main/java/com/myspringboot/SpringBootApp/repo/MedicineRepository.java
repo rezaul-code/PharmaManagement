@@ -140,4 +140,16 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
         ORDER BY (m.price - m.purchasePrice) ASC
         """)
     List<Medicine> findNegativeMarginMedicines(@Param("pharmacyId") Long pharmacyId);
+    
+ // Low stock query
+    List<Medicine> findByPharmacyIdAndStockQuantityLessThanEqualOrderByStockQuantityAsc(
+        Long pharmacyId, int maxStock);
+     
+    // Expiring query
+    List<Medicine> findByPharmacyIdAndExpiryDateBetweenOrderByExpiryDateAsc(
+        Long pharmacyId, LocalDate startDate, LocalDate endDate);
 }
+
+
+
+

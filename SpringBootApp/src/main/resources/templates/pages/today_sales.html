@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Today's Sales — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    .pt-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .pt-badge-cash   { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
+    .pt-badge-upi    { background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; }
+    .pt-badge-card   { background:#f5f3ff; color:#6d28d9; border:1px solid #c4b5fd; }
+    .pt-badge-credit { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+    .badge-credit-pending { background:#fee2e2; color:#b91c1c; }
+    .badge-credit-partial { background:#fef3c7; color:#92400e; }
+    .badge-credit-cleared { background:#dcfce7; color:#15803d; }
+    .balance-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; padding: 2px 8px;
+      border-radius: 6px; background:#fee2e2; color:#b91c1c;
+    }
+
+    /* Today summary bar */
+    .today-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+    }
+    .today-stat {
+      padding: 16px 22px;
+      border-right: 1px solid var(--border, #e2e8f0);
+    }
+    .today-stat:last-child { border-right: none; }
+    .today-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted, #64748b); margin-bottom: 4px; }
+    .today-stat-value { font-size: 20px; font-weight: 800; color: var(--text, #1e293b); line-height: 1.2; }
+    .today-stat-value.green { color: #15803d; }
+    .today-stat-value.amber { color: #d97706; }
+    .today-stat-value.blue  { color: #1d4ed8; }
+
+    /* Search bar */
+    .list-filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 20px; border-bottom: 1px solid var(--border, #e2e8f0);
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/sidebar :: sidebar}" th:with="activePage='bill-history'"></div>
+
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Today's Sales
+      <small th:text="'Bills created on ' + ${#temporals.format(today,'dd MMM yyyy')}">Today</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/dashboard"    class="topbar-btn btn-outline">← Dashboard</a>
+      <a href="/billing/list" class="topbar-btn btn-outline">All Bills</a>
+      <a href="/billing/new"  class="topbar-btn btn-primary">🧾 New Bill</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-danger"  th:if="${error}"   th:text="${error}"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🧾 Today's Bills</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${bills.size()} + ' bill(s) today'">0 bills</span>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="today-summary">
+        <div class="today-stat">
+          <div class="today-stat-label">Total Bills</div>
+          <div class="today-stat-value blue" th:text="${bills.size()}">0</div>
+        </div>
+        <div class="today-stat">
+          <div class="today-stat-label">Total Revenue</div>
+          <div class="today-stat-value green">₹<span th:text="${#numbers.formatDecimal(todayTotal,1,2)}">0.00</span></div>
+        </div>
+        <div class="today-stat">
+          <div class="today-stat-label">Total GST</div>
+          <div class="today-stat-value amber">₹<span th:text="${#numbers.formatDecimal(todayGst,1,2)}">0.00</span></div>
+        </div>
+        <div class="today-stat">
+          <div class="today-stat-label">Credit Sales</div>
+          <div class="today-stat-value amber" th:text="${creditCount}">0</div>
+        </div>
+        <div class="today-stat">
+          <div class="today-stat-label">Balance Pending</div>
+          <div class="today-stat-value" style="color:#dc2626">₹<span th:text="${#numbers.formatDecimal(pendingBalance,1,2)}">0.00</span></div>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="list-filter-bar">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">
+          📅 <span th:text="${#temporals.format(today,'EEEE, dd MMMM yyyy')}">Today</span>
+        </span>
+        <div style="margin-left:auto">
+          <input type="text" id="billSearch" class="form-control"
+                 style="width:220px;height:34px;font-size:13px"
+                 placeholder="🔍 Search patient / bill #…"
+                 oninput="searchTable(this.value)"/>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(bills)}"
+           style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:12px">🧾</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">No bills yet today</div>
+        <div style="font-size:13px;margin-top:6px">Create the first bill of the day!</div>
+        <a href="/billing/new" style="display:inline-block;margin-top:16px;color:var(--primary);font-weight:700">🧾 New Bill →</a>
+      </div>
+
+      <div class="table-wrap" th:if="${!#lists.isEmpty(bills)}">
+        <table class="pharma-table" id="billTable">
+          <thead>
+            <tr>
+              <th>Bill #</th>
+              <th>Patient</th>
+              <th>Phone</th>
+              <th>Time</th>
+              <th>Payment</th>
+              <th class="num">Subtotal</th>
+              <th class="num">GST</th>
+              <th class="num">Grand Total</th>
+              <th class="num">Balance Due</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="bill : ${bills}"
+                th:data-search="${(bill.billNumber ?: '') + ' ' + (bill.patientName ?: '') + ' ' + (bill.patientPhone ?: '')}">
+
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   th:text="${bill.billNumber}"
+                   style="color:var(--primary);font-weight:700;font-family:var(--font-mono,monospace)">—</a>
+              </td>
+
+              <td style="font-weight:600" th:text="${bill.patientName ?: 'Walk-in'}">—</td>
+
+              <td style="color:var(--text-muted);font-size:12.5px"
+                  th:text="${bill.patientPhone ?: '—'}">—</td>
+
+              <td style="color:var(--text-muted);font-size:12.5px"
+                  th:text="${#temporals.format(bill.createdAt,'hh:mm a')}">—</td>
+
+              <!-- Payment type -->
+              <td>
+                <span class="pt-badge"
+                  th:with="pt=${bill.paymentType.name()}"
+                  th:classappend="${pt == 'CASH' ? 'pt-badge-cash' : pt == 'UPI' ? 'pt-badge-upi' : pt == 'CARD' ? 'pt-badge-card' : 'pt-badge-credit'}"
+                  th:text="${pt == 'CASH' ? '💵 Cash' : pt == 'UPI' ? '📱 UPI' : pt == 'CARD' ? '💳 Card' : '🤝 Credit'}">—</span>
+              </td>
+
+              <td class="num">₹<span th:text="${#numbers.formatDecimal(bill.subtotal,1,2)}">0.00</span></td>
+
+              <td class="num" style="color:var(--warning,#f59e0b)">
+                ₹<span th:text="${#numbers.formatDecimal(bill.totalGst,1,2)}">0.00</span>
+              </td>
+
+              <td class="num" style="font-weight:700;color:var(--primary)">
+                ₹<span th:text="${#numbers.formatDecimal(bill.grandTotal,1,2)}">0.00</span>
+              </td>
+
+              <td class="num">
+                <span th:if="${bill.isCreditBill() and bill.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                      class="balance-chip">
+                  ₹<span th:text="${#numbers.formatDecimal(bill.balanceDue,1,2)}">0.00</span>
+                </span>
+                <span th:unless="${bill.isCreditBill() and bill.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                      style="color:var(--text-muted)">—</span>
+              </td>
+
+              <td>
+                <span class="badge"
+                  th:with="st=${bill.status.name()}"
+                  th:classappend="${st == 'PAID' ? 'badge-success' : st == 'CREDIT_CLEARED' ? 'badge-credit-cleared' : st == 'CREDIT_PARTIAL' ? 'badge-credit-partial' : st == 'CREDIT_PENDING' ? 'badge-credit-pending' : st == 'CANCELLED' ? 'badge-danger' : 'badge-warning'}"
+                  th:text="${st == 'CREDIT_PENDING' ? 'Credit Pending' : st == 'CREDIT_PARTIAL' ? 'Credit Partial' : st == 'CREDIT_CLEARED' ? 'Credit Cleared' : bill.status}">—</span>
+              </td>
+
+              <td>
+                <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   class="btn btn-sm btn-outline"
+                   style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
+                  👁 View
+                </a>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${!#lists.isEmpty(bills)}"
+           style="padding:10px 20px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border,#e2e8f0)"
+           id="tableFooter">
+        Showing all <span th:text="${bills.size()}">0</span> bills today
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  window.searchTable = function(q) {
+    var search = q.toLowerCase().trim();
+    var rows = document.querySelectorAll('#billTable tbody tr[data-search]');
+    var visible = 0;
+    rows.forEach(function(tr){
+      var match = !search || (tr.dataset.search||'').toLowerCase().indexOf(search) !== -1;
+      tr.style.display = match ? '' : 'none';
+      if(match) visible++;
+    });
+    var footer = document.getElementById('tableFooter');
+    if(footer) footer.textContent = 'Showing ' + visible + ' of ' + rows.length + ' bills today';
+  };
+})();
+</script>
+</body>
+</html>
