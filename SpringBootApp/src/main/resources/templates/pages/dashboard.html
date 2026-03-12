@@ -6,6 +6,7 @@
   <title>Dashboard — PharmaManagement</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <style>
+    /* ── Pharmacy overlay ───────────────────────────────────────── */
     .pharmacy-overlay { position:fixed;inset:0;z-index:999;pointer-events:none; }
     .pharmacy-overlay.open { pointer-events:all; }
     .pharmacy-backdrop { position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .25s ease; }
@@ -35,6 +36,8 @@
     .pp-label { font-size:10px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px; }
     .pp-value { font-size:13px;font-weight:600;color:#e2e8f0;line-height:1.4; }
     .pp-value.mono { font-family:var(--font-mono,monospace);letter-spacing:.03em;color:#34d399; }
+
+    /* ── Topbar pharmacy pill ───────────────────────────────────── */
     .topbar-pharmacy {
       display:flex;align-items:center;gap:8px;
       margin-left:auto;margin-right:16px;
@@ -44,105 +47,204 @@
     }
     .topbar-pharmacy-dot { width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 2px rgba(52,211,153,.25); }
     .topbar-pharmacy-name { font-size:13px;font-weight:700;color:#34d399;white-space:nowrap; }
-    .role-badge { display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em; }
-    .role-owner      { background:rgba(239,68,68,.15); color:#f87171; }
-    .role-pharmacist { background:rgba(59,130,246,.15);color:#60a5fa; }
-    .role-staff      { background:rgba(148,163,184,.12);color:#94a3b8; }
+
+    /* ── Clickable stat card ────────────────────────────────────── */
+    .stat-card {
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '→';
+      position: absolute;
+      bottom: 10px;
+      right: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted, #94a3b8);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity .18s, transform .18s;
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(0,0,0,.12);
+      border-color: var(--primary, #0ea5e9);
+    }
+    .stat-card:hover::after {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .stat-card:active { transform: translateY(-1px); }
+
+    /* Coloured hover tints per card */
+    .stat-card.card-medicines:hover  { border-color: #0ea5e9; box-shadow: 0 8px 28px rgba(14,165,233,.15); }
+    .stat-card.card-lowstock:hover   { border-color: #f87171; box-shadow: 0 8px 28px rgba(248,113,113,.15); }
+    .stat-card.card-expiring:hover   { border-color: #fbbf24; box-shadow: 0 8px 28px rgba(251,191,36,.15); }
+    .stat-card.card-sales:hover      { border-color: #34d399; box-shadow: 0 8px 28px rgba(52,211,153,.15); }
+
+    /* Click hint tooltip */
+    .stat-card .click-hint {
+      position: absolute;
+      top: 10px; right: 12px;
+      font-size: 10px; font-weight: 600;
+      color: var(--text-muted, #94a3b8);
+      background: rgba(0,0,0,.04);
+      padding: 2px 7px; border-radius: 20px;
+      border: 1px solid var(--border, #e2e8f0);
+      opacity: 0;
+      transition: opacity .18s;
+      pointer-events: none;
+    }
+    .stat-card:hover .click-hint { opacity: 1; }
+
+    /* Danger pulsing dot for urgent cards */
+    .stat-danger .stat-icon::after {
+      content: '';
+      position: absolute;
+      top: -3px; right: -3px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 0 0 rgba(239,68,68,.4);
+      animation: pulse-dot 1.8s ease infinite;
+    }
+    .stat-icon { position: relative; }
+    @keyframes pulse-dot {
+      0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
+      70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
   </style>
 </head>
 <body>
 
-<!-- PHARMACY DETAILS OVERLAY -->
+<!-- Pharmacy overlay -->
 <div class="pharmacy-overlay" id="pharmacyOverlay">
   <div class="pharmacy-backdrop" id="pharmacyBackdrop"></div>
   <div class="pharmacy-panel">
     <div class="pp-header">
-      <span class="pp-header-title">&#x1F3E5; Pharmacy Info</span>
-      <button class="pp-close" id="pharmacyClose">&#x2715;</button>
+      <span class="pp-header-title">🏥 Pharmacy Info</span>
+      <button class="pp-close" id="pharmacyClose">✕</button>
     </div>
-    <div class="pp-row"><div class="pp-label">Pharmacy Name</div><div class="pp-value" th:text="${pharmacy?.name ?: '&mdash;'}">&mdash;</div></div>
-    <div class="pp-row"><div class="pp-label">License No.</div><div class="pp-value mono" th:text="${pharmacy?.licenseNumber ?: '&mdash;'}">&mdash;</div></div>
-    <div class="pp-row"><div class="pp-label">Phone</div><div class="pp-value" th:text="${pharmacy?.phone ?: '&mdash;'}">&mdash;</div></div>
-    <div class="pp-row"><div class="pp-label">Email</div><div class="pp-value" th:text="${pharmacy?.email ?: '&mdash;'}">&mdash;</div></div>
-    <div class="pp-row"><div class="pp-label">Address</div><div class="pp-value" style="font-weight:400;color:#94a3b8;font-size:12px;" th:text="${pharmacy?.address ?: '&mdash;'}">&mdash;</div></div>
+    <div class="pp-row"><div class="pp-label">Pharmacy Name</div><div class="pp-value" th:text="${pharmacy?.name ?: '—'}">—</div></div>
+    <div class="pp-row"><div class="pp-label">License No.</div><div class="pp-value mono" th:text="${pharmacy?.licenseNumber ?: '—'}">—</div></div>
+    <div class="pp-row"><div class="pp-label">Phone</div><div class="pp-value" th:text="${pharmacy?.phone ?: '—'}">—</div></div>
+    <div class="pp-row"><div class="pp-label">Email</div><div class="pp-value" th:text="${pharmacy?.email ?: '—'}">—</div></div>
+    <div class="pp-row"><div class="pp-label">Address</div><div class="pp-value" style="font-weight:400;color:#94a3b8;font-size:12px;" th:text="${pharmacy?.address ?: '—'}">—</div></div>
   </div>
 </div>
 
-<!-- Sidebar — FIX: pass activePage='dashboard' -->
-<div th:replace="~{fragments/sidebar :: sidebar(activePage='dashboard')}"></div>
+<!-- Sidebar -->
+<div th:replace="~{fragments/sidebar :: sidebar}" th:with="activePage='dashboard'"></div>
 
-<!-- MAIN -->
+<!-- Main -->
 <div class="main-wrapper">
   <div class="topbar">
-    <div class="topbar-title">Dashboard<small>Welcome back &mdash; here&apos;s what&apos;s happening today</small></div>
+    <div class="topbar-title">
+      Dashboard
+      <small>Welcome back — here's what's happening today</small>
+    </div>
     <div class="topbar-pharmacy" th:if="${pharmacy != null}">
       <div class="topbar-pharmacy-dot"></div>
       <span class="topbar-pharmacy-name" th:text="${pharmacy.name}">Pharmacy</span>
     </div>
     <div class="topbar-actions">
-      <a href="/billing/new" class="topbar-btn btn-primary">&#x1F9FE; New Bill</a>
-      <a th:if="${session.loggedInUser?.canManageMedicines()}" href="/medicine/add" class="topbar-btn btn-outline">&#x2795; Add Medicine</a>
+      <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
+      <a th:if="${session.loggedInUser?.canManageMedicines()}"
+         href="/medicine/add" class="topbar-btn btn-outline">➕ Add Medicine</a>
     </div>
   </div>
 
   <div class="page-content">
+
+    <!-- ── STAT CARDS (all clickable) ─────────────────────────── -->
     <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-icon teal">&#x1F48A;</div>
+
+      <!-- 1. Total Medicines → /medicine/show -->
+      <a href="/medicine/show" class="stat-card card-medicines" style="text-decoration:none;color:inherit;">
+        <span class="click-hint">View all</span>
+        <div class="stat-icon teal">💊</div>
         <div class="stat-info">
           <div class="stat-label">Total Medicines</div>
           <div class="stat-value" th:text="${totalMedicines}">0</div>
           <div class="stat-sub">In inventory</div>
         </div>
-      </div>
-      <div class="stat-card" th:classappend="${lowStockCount > 0 ? 'stat-danger' : ''}">
-        <div class="stat-icon red">&#x26A0;&#xFE0F;</div>
+      </a>
+
+      <!-- 2. Low Stock → /medicine/low-stock -->
+      <a href="/medicine/low-stock"
+         class="stat-card card-lowstock"
+         th:classappend="${lowStockCount > 0 ? ' stat-danger' : ''}"
+         style="text-decoration:none;color:inherit;">
+        <span class="click-hint">View list</span>
+        <div class="stat-icon red">⚠️</div>
         <div class="stat-info">
           <div class="stat-label">Low Stock</div>
           <div class="stat-value" th:text="${lowStockCount}">0</div>
-          <div class="stat-sub">Stock &le; 10 units</div>
+          <div class="stat-sub">Stock ≤ 10 units</div>
         </div>
-      </div>
-      <div class="stat-card" th:classappend="${expiringCount > 0 ? 'stat-danger' : ''}">
-        <div class="stat-icon amber">&#x1F4C5;</div>
+      </a>
+
+      <!-- 3. Expiring → /medicine/expiring -->
+      <a href="/medicine/expiring"
+         class="stat-card card-expiring"
+         th:classappend="${expiringCount > 0 ? ' stat-danger' : ''}"
+         style="text-decoration:none;color:inherit;">
+        <span class="click-hint">View list</span>
+        <div class="stat-icon amber">📅</div>
         <div class="stat-info">
           <div class="stat-label">Expiring in 30 Days</div>
           <div class="stat-value" th:text="${expiringCount}">0</div>
           <div class="stat-sub">
-            <span th:if="${expiringCount > 0}" style="color:#f87171;font-weight:600">&#x26A0;&#xFE0F; Needs attention</span>
-            <span th:if="${expiringCount == 0}">&#x2705; All clear</span>
+            <span th:if="${expiringCount > 0}" style="color:#f87171;font-weight:600">⚠️ Needs attention</span>
+            <span th:if="${expiringCount == 0}">✅ All clear</span>
           </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon amber">&#x1F4B0;</div>
+      </a>
+
+      <!-- 4. Today's Sales → /billing/today -->
+      <a href="/billing/today" class="stat-card card-sales" style="text-decoration:none;color:inherit;">
+        <span class="click-hint">View bills</span>
+        <div class="stat-icon amber">💰</div>
         <div class="stat-info">
-          <div class="stat-label">Today&apos;s Sales</div>
-          <div class="stat-value">&#x20B9;<span th:text="${#numbers.formatDecimal(todaySales,1,2)}">0.00</span></div>
+          <div class="stat-label">Today's Sales</div>
+          <div class="stat-value">
+            ₹<span th:text="${#numbers.formatDecimal(todaySales, 1, 2)}">0.00</span>
+          </div>
           <div class="stat-sub">Including GST</div>
         </div>
-      </div>
+      </a>
+
     </div>
 
+    <!-- ── BOTTOM ROW ──────────────────────────────────────────── -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-      <!-- Low Stock -->
+
       <div class="card">
         <div class="card-header">
-          <div class="card-title">&#x26A0;&#xFE0F; Low Stock Medicines</div>
-          <a href="/medicine/show" style="font-size:12px;color:var(--primary);font-weight:600">View all &rarr;</a>
+          <div class="card-title">⚠️ Low Stock Medicines</div>
+          <a href="/medicine/low-stock" style="font-size:12px;color:var(--primary);font-weight:600">View all →</a>
         </div>
         <div class="table-wrap">
           <table class="pharma-table">
             <thead><tr><th>Medicine</th><th>Type</th><th class="num">Stock</th></tr></thead>
             <tbody>
               <tr th:if="${#lists.isEmpty(lowStockMeds)}">
-                <td colspan="3" style="text-align:center;color:var(--text-muted);padding:24px">&#x2705; All medicines are well stocked</td>
+                <td colspan="3" style="text-align:center;color:var(--text-muted);padding:24px">✅ All medicines are well stocked</td>
               </tr>
               <tr th:each="med : ${lowStockMeds}">
                 <td th:text="${med.name}">—</td>
                 <td><span class="badge badge-muted" th:text="${med.type}">—</span></td>
                 <td class="num">
-                  <span class="badge" th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : 'badge-warning'}" th:text="${med.stockQuantity}">0</span>
+                  <span class="badge"
+                        th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : 'badge-warning'}"
+                        th:text="${med.stockQuantity}">0</span>
                 </td>
               </tr>
             </tbody>
@@ -150,11 +252,10 @@
         </div>
       </div>
 
-      <!-- Recent Bills -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">&#x1F9FE; Recent Bills</div>
-          <a href="/billing/list" style="font-size:12px;color:var(--primary);font-weight:600">View all &rarr;</a>
+          <div class="card-title">🧾 Recent Bills</div>
+          <a href="/billing/list" style="font-size:12px;color:var(--primary);font-weight:600">View all →</a>
         </div>
         <div class="table-wrap">
           <table class="pharma-table">
@@ -165,16 +266,18 @@
               </tr>
               <tr th:each="bill : ${recentBills}">
                 <td>
-                  <a th:href="@{/billing/view/{id}(id=${bill.id})}" th:text="${bill.billNumber}"
+                  <a th:href="@{/billing/view/{id}(id=${bill.id})}"
+                     th:text="${bill.billNumber}"
                      style="color:var(--primary);font-weight:600;font-family:var(--font-mono)">—</a>
                 </td>
-                <td th:text="${bill.patientName ?: '&mdash;'}">—</td>
-                <td class="num fw-bold text-primary">&#x20B9;<span th:text="${#numbers.formatDecimal(bill.grandTotal,1,2)}">0.00</span></td>
+                <td th:text="${bill.patientName ?: '—'}">—</td>
+                <td class="num fw-bold text-primary">₹<span th:text="${#numbers.formatDecimal(bill.grandTotal,1,2)}">0.00</span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -186,7 +289,7 @@
   const closeBtn=document.getElementById('pharmacyClose');
   function openPanel(){overlay.classList.add('open');}
   function closePanel(){overlay.classList.remove('open');}
-  if(trigger) trigger.addEventListener('click',openPanel);
+  if(trigger)  trigger.addEventListener('click',openPanel);
   if(backdrop) backdrop.addEventListener('click',closePanel);
   if(closeBtn) closeBtn.addEventListener('click',closePanel);
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closePanel();});

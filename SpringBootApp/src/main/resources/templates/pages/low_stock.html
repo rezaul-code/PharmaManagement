@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Low Stock Medicines — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    .stock-bar-wrap {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .stock-bar {
+      flex: 1; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;
+      max-width: 80px;
+    }
+    .stock-bar-fill {
+      height: 100%; border-radius: 99px; transition: width .4s ease;
+    }
+    .fill-danger  { background: linear-gradient(90deg,#ef4444,#f87171); }
+    .fill-warning { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+
+    .urgency-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .urgency-out     { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+    .urgency-critical{ background:#fff1f2; color:#e11d48; border:1px solid #fda4af; }
+    .urgency-low     { background:#fef3c7; color:#b45309; border:1px solid #fde68a; }
+
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 14px 20px;
+      background: linear-gradient(135deg,#fff8f0,#fff);
+      border-bottom: 1px solid var(--border,#e2e8f0);
+    }
+    .summary-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700;
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .sp-out      { background:#fee2e2; color:#b91c1c; }
+    .sp-critical { background:#fff1f2; color:#e11d48; }
+    .sp-low      { background:#fef3c7; color:#b45309; }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/sidebar :: sidebar}" th:with="activePage='medicines'"></div>
+
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Low Stock Medicines
+      <small>Medicines running out — reorder soon</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/dashboard" class="topbar-btn btn-outline">← Dashboard</a>
+      <a th:if="${session.loggedInUser?.canManageMedicines()}"
+         href="/medicine/add" class="topbar-btn btn-primary">➕ Add Stock</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">⚠️ Low Stock Report</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${medicines.size()} + ' medicine(s) need attention'">0 medicines</span>
+      </div>
+
+      <!-- Summary pills -->
+      <div class="summary-bar">
+        <span class="summary-pill sp-out">
+          🔴 Out of Stock:
+          <strong th:text="${outOfStockCount}">0</strong>
+        </span>
+        <span class="summary-pill sp-critical">
+          🟠 Critical (≤ 3):
+          <strong th:text="${criticalCount}">0</strong>
+        </span>
+        <span class="summary-pill sp-low">
+          🟡 Low (4–10):
+          <strong th:text="${lowCount}">0</strong>
+        </span>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(medicines)}"
+           style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">All medicines are well stocked!</div>
+        <div style="font-size:13px;margin-top:6px">No medicines with stock ≤ 10 units found.</div>
+        <a href="/dashboard" style="display:inline-block;margin-top:16px;color:var(--primary);font-weight:600">← Back to Dashboard</a>
+      </div>
+
+      <div class="table-wrap" th:if="${!#lists.isEmpty(medicines)}">
+        <table class="pharma-table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Code</th>
+              <th>Type</th>
+              <th>Batch</th>
+              <th>Manufacturer</th>
+              <th class="num">Stock</th>
+              <th class="num">Purchase Price</th>
+              <th class="num">Selling Price</th>
+              <th>Urgency</th>
+              <th th:if="${session.loggedInUser?.canManageMedicines()}"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="med : ${medicines}"
+                th:style="${med.stockQuantity == 0 ? 'background:rgba(239,68,68,.03)' : (med.stockQuantity <= 3 ? 'background:rgba(251,113,133,.02)' : '')}">
+
+              <td>
+                <div style="font-weight:700" th:text="${med.name}">—</div>
+                <div style="font-size:11px;color:var(--text-muted)" th:text="${med.description ?: ''}"></div>
+              </td>
+
+              <td style="font-family:var(--font-mono,monospace);font-size:12px;color:var(--text-muted)"
+                  th:text="${med.medicineCode ?: '—'}">—</td>
+
+              <td><span class="badge badge-muted" th:text="${med.type}">—</span></td>
+
+              <td style="font-family:var(--font-mono,monospace);font-size:12px;color:var(--text-muted)"
+                  th:text="${med.batchNo ?: '—'}">—</td>
+
+              <td style="font-size:12.5px;color:var(--text-muted)"
+                  th:text="${med.manufacturer ?: '—'}">—</td>
+
+              <!-- Stock with mini bar -->
+              <td class="num">
+                <div class="stock-bar-wrap" style="justify-content:flex-end">
+                  <div class="stock-bar">
+                    <div class="stock-bar-fill"
+                         th:classappend="${med.stockQuantity == 0 ? 'fill-danger' : 'fill-warning'}"
+                         th:style="'width:' + ${med.stockQuantity * 10} + '%'"></div>
+                  </div>
+                  <span class="badge"
+                        th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : 'badge-warning'}"
+                        th:text="${med.stockQuantity}">0</span>
+                </div>
+              </td>
+
+              <td class="num" style="color:var(--text-muted)">
+                <span th:if="${med.purchasePrice != null}">₹<span th:text="${#numbers.formatDecimal(med.purchasePrice,1,2)}">—</span></span>
+                <span th:unless="${med.purchasePrice != null}" style="color:var(--text-muted)">—</span>
+              </td>
+
+              <td class="num" style="font-weight:600">
+                <span th:if="${med.price != null}">₹<span th:text="${#numbers.formatDecimal(med.price,1,2)}">—</span></span>
+                <span th:unless="${med.price != null}" style="color:var(--text-muted)">—</span>
+              </td>
+
+              <!-- Urgency badge -->
+              <td>
+                <span th:if="${med.stockQuantity == 0}"      class="urgency-badge urgency-out">🔴 Out of Stock</span>
+                <span th:if="${med.stockQuantity > 0 and med.stockQuantity <= 3}"  class="urgency-badge urgency-critical">🟠 Critical</span>
+                <span th:if="${med.stockQuantity > 3 and med.stockQuantity <= 10}" class="urgency-badge urgency-low">🟡 Low</span>
+              </td>
+
+              <td th:if="${session.loggedInUser?.canManageMedicines()}">
+                <a th:href="@{/medicine/edit/{id}(id=${med.id})}"
+                   class="btn btn-sm btn-outline"
+                   style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
+                  ✏️ Edit
+                </a>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${!#lists.isEmpty(medicines)}"
+           style="padding:10px 20px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border,#e2e8f0)">
+        Showing <span th:text="${medicines.size()}">0</span> medicines with stock ≤ 10 units
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

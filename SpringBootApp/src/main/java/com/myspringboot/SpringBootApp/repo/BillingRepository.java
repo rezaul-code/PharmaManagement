@@ -270,6 +270,12 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
     	    WHERE b.id = :id AND b.pharmacy.id = :pharmacyId
     	""")
     	Optional<Billing> findByIdWithDetails(@Param("id") Long id, @Param("pharmacyId") Long pharmacyId);
+    
+ // Today's bills query
+    List<Billing> findByPharmacyIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+        Long pharmacyId, LocalDateTime start, LocalDateTime end);
+    
+    
 }
 
 

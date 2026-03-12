@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expiring Medicines — PharmaManagement</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <style>
+    .days-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .days-today    { background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; }
+    .days-week     { background:#fff1f2; color:#e11d48; border:1px solid #fda4af; }
+    .days-fortnight{ background:#fef3c7; color:#b45309; border:1px solid #fde68a; }
+    .days-month    { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+
+    .expiry-date {
+      font-family: var(--font-mono, monospace);
+      font-weight: 600;
+    }
+    .expiry-past    { color: #b91c1c; }
+    .expiry-today   { color: #dc2626; }
+    .expiry-week    { color: #ea580c; }
+    .expiry-month   { color: #d97706; }
+
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 14px 20px;
+      background: linear-gradient(135deg,#fffbf0,#fff);
+      border-bottom: 1px solid var(--border,#e2e8f0);
+    }
+    .summary-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 700;
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .sp-expired { background:#fee2e2; color:#b91c1c; }
+    .sp-week    { background:#fff1f2; color:#e11d48; }
+    .sp-month   { background:#fef3c7; color:#b45309; }
+
+    /* Days countdown pill */
+    .countdown {
+      font-size: 13px; font-weight: 800;
+      padding: 4px 12px; border-radius: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+
+<div th:replace="~{fragments/sidebar :: sidebar}" th:with="activePage='medicines'"></div>
+
+<div class="main-wrapper">
+  <div class="topbar">
+    <div class="topbar-title">
+      Expiring Medicines
+      <small>Medicines expiring within the next 30 days</small>
+    </div>
+    <div class="topbar-actions">
+      <a href="/dashboard" class="topbar-btn btn-outline">← Dashboard</a>
+      <a href="/medicine/show" class="topbar-btn btn-outline">All Medicines</a>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 Expiry Report</div>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:text="${medicines.size()} + ' medicine(s) expiring within 30 days'">0 medicines</span>
+      </div>
+
+      <!-- Summary pills -->
+      <div class="summary-bar">
+        <span class="summary-pill sp-expired">
+          🔴 Expired / Today:
+          <strong th:text="${expiredOrTodayCount}">0</strong>
+        </span>
+        <span class="summary-pill sp-week">
+          🟠 Within 7 days:
+          <strong th:text="${withinWeekCount}">0</strong>
+        </span>
+        <span class="summary-pill sp-month">
+          🟡 Within 30 days:
+          <strong th:text="${medicines.size()}">0</strong>
+        </span>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(medicines)}"
+           style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:12px">✅</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">No medicines expiring soon!</div>
+        <div style="font-size:13px;margin-top:6px">All medicines have more than 30 days left.</div>
+        <a href="/dashboard" style="display:inline-block;margin-top:16px;color:var(--primary);font-weight:600">← Back to Dashboard</a>
+      </div>
+
+      <div class="table-wrap" th:if="${!#lists.isEmpty(medicines)}">
+        <table class="pharma-table">
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Code</th>
+              <th>Type</th>
+              <th>Batch</th>
+              <th>Manufacturer</th>
+              <th class="num">Stock</th>
+              <th class="num">Price</th>
+              <th>Expiry Date</th>
+              <th>Days Left</th>
+              <th th:if="${session.loggedInUser?.canManageMedicines()}"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="med : ${medicines}"
+                th:style="${med.daysUntilExpiry != null and med.daysUntilExpiry <= 0 ? 'background:rgba(239,68,68,.04)' :
+                           (med.daysUntilExpiry != null and med.daysUntilExpiry <= 7 ? 'background:rgba(251,113,133,.02)' : '')}">
+
+              <td>
+                <div style="font-weight:700" th:text="${med.name}">—</div>
+                <div style="font-size:11px;color:var(--text-muted)" th:text="${med.description ?: ''}"></div>
+              </td>
+
+              <td style="font-family:var(--font-mono,monospace);font-size:12px;color:var(--text-muted)"
+                  th:text="${med.medicineCode ?: '—'}">—</td>
+
+              <td><span class="badge badge-muted" th:text="${med.type}">—</span></td>
+
+              <td style="font-family:var(--font-mono,monospace);font-size:12px;color:var(--text-muted)"
+                  th:text="${med.batchNo ?: '—'}">—</td>
+
+              <td style="font-size:12.5px;color:var(--text-muted)"
+                  th:text="${med.manufacturer ?: '—'}">—</td>
+
+              <td class="num">
+                <span class="badge"
+                      th:classappend="${med.stockQuantity == 0 ? 'badge-danger' : (med.stockQuantity <= 10 ? 'badge-warning' : 'badge-success')}"
+                      th:text="${med.stockQuantity}">0</span>
+              </td>
+
+              <td class="num" style="font-weight:600">
+                <span th:if="${med.price != null}">₹<span th:text="${#numbers.formatDecimal(med.price,1,2)}">—</span></span>
+                <span th:unless="${med.price != null}" style="color:var(--text-muted)">—</span>
+              </td>
+
+              <!-- Expiry date -->
+              <td>
+                <span class="expiry-date"
+                      th:classappend="${med.daysUntilExpiry != null and med.daysUntilExpiry <= 0  ? 'expiry-past'  :
+                                       (med.daysUntilExpiry != null and med.daysUntilExpiry <= 1  ? 'expiry-today' :
+                                       (med.daysUntilExpiry != null and med.daysUntilExpiry <= 7  ? 'expiry-week'  : 'expiry-month'))}"
+                      th:text="${#temporals.format(med.expiryDate,'dd MMM yyyy')}">—</span>
+              </td>
+
+              <!-- Days left badge -->
+              <td>
+                <span th:if="${med.daysUntilExpiry != null and med.daysUntilExpiry <= 0}"
+                      class="days-badge days-today">🔴 Expired</span>
+                <span th:if="${med.daysUntilExpiry != null and med.daysUntilExpiry == 1}"
+                      class="days-badge days-today">🔴 Today</span>
+                <span th:if="${med.daysUntilExpiry != null and med.daysUntilExpiry > 1 and med.daysUntilExpiry <= 7}"
+                      class="days-badge days-week">
+                  🟠 <span th:text="${med.daysUntilExpiry}">0</span> days
+                </span>
+                <span th:if="${med.daysUntilExpiry != null and med.daysUntilExpiry > 7 and med.daysUntilExpiry <= 14}"
+                      class="days-badge days-fortnight">
+                  🟡 <span th:text="${med.daysUntilExpiry}">0</span> days
+                </span>
+                <span th:if="${med.daysUntilExpiry != null and med.daysUntilExpiry > 14}"
+                      class="days-badge days-month">
+                  📅 <span th:text="${med.daysUntilExpiry}">0</span> days
+                </span>
+              </td>
+
+              <td th:if="${session.loggedInUser?.canManageMedicines()}">
+                <a th:href="@{/medicine/edit/{id}(id=${med.id})}"
+                   class="btn btn-sm btn-outline"
+                   style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
+                  ✏️ Edit
+                </a>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div th:if="${!#lists.isEmpty(medicines)}"
+           style="padding:10px 20px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border,#e2e8f0)">
+        Showing <span th:text="${medicines.size()}">0</span> medicines expiring within 30 days
+        · sorted by expiry date (soonest first)
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

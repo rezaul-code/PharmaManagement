@@ -17,6 +17,7 @@ import jakarta.persistence.Transient;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "medicines")
@@ -36,6 +37,12 @@ public class Medicine {
 
     private String manufacturer;
     private String batchNo;
+    
+    @Transient
+    public Long getDaysUntilExpiry() {
+        if (expiryDate == null) return null;
+        return ChronoUnit.DAYS.between(LocalDate.now(), expiryDate);
+    }
 
     // ── Pricing ──────────────────────────────────────────────────────────
 

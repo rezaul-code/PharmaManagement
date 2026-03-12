@@ -11,12 +11,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.myspringboot.SpringBootApp.repo.MedicineRepository;
+import java.time.LocalDate;
+import java.util.List;
 
 @Controller
 public class MedicineController {
 
     @Autowired
     private MedicineService medicineService;
+    
+    @Autowired
+    private MedicineRepository medicineRepository;
 
     // ── Guard helper ──────────────────────────────────────────────────────
 
@@ -173,4 +179,63 @@ public class MedicineController {
                                        RedirectAttributes ra) {
         return deleteMedicine(id, session, ra);
     }
+    
+ // ── Low Stock Page ───────────────────────────────────────────────────
+    @GetMapping("/medicine/low-stock")
+    public String lowStockPage(HttpSession session, Model model) {
+        User user = (User) session.getAttribute("loggedInUser");
+        if (user == null) return "redirect:/login";
+     
+        Long pharmacyId = user.getPharmacy().getId();
+     
+        List<Medicine> medicines = medicineRepository
+            .findByStockQuantityLessThanEqualAndPharmacyId(10, pharmacyId);
+     
+        // sort: out-of-stock first, then ascending
+        medicines.sort(java.util.Comparator.comparingInt(Medicine::getStockQuantity));
+     
+        long outOfStockCount = medicines.stream().filter(m -> m.getStockQuantity() == 0).count();
+        long criticalCount   = medicines.stream().filter(m -> m.getStockQuantity() > 0 && m.getStockQuantity() <= 3).count();
+        long lowCount        = medicines.stream().filter(m -> m.getStockQuantity() > 3).count();
+     
+        model.addAttribute("medicines",       medicines);
+        model.addAttribute("outOfStockCount", outOfStockCount);
+        model.addAttribute("criticalCount",   criticalCount);
+        model.addAttribute("lowCount",        lowCount);
+        model.addAttribute("currentUser",     user);
+        return "pages/low_stock";
+    }
+     
+    // ── Expiring Medicines Page ──────────────────────────────────────────
+    @GetMapping("/medicine/expiring")
+    public String expiringMedicinesPage(HttpSession session, Model model) {
+        User user = (User) session.getAttribute("loggedInUser");
+        if (user == null) return "redirect:/login";
+     
+        Long pharmacyId = user.getPharmacy().getId();
+        LocalDate today    = LocalDate.now();
+        LocalDate in30Days = today.plusDays(30);
+     
+        List<Medicine> medicines = medicineRepository
+            .findExpiringBetween(pharmacyId, today, in30Days);
+     
+        long expiredOrTodayCount = medicines.stream()
+            .filter(m -> m.getExpiryDate() != null && !m.getExpiryDate().isAfter(today))
+            .count();
+        long withinWeekCount = medicines.stream()
+            .filter(m -> m.getExpiryDate() != null
+                      && m.getExpiryDate().isAfter(today)
+                      && !m.getExpiryDate().isAfter(today.plusDays(7)))
+            .count();
+     
+        model.addAttribute("medicines",           medicines);
+        model.addAttribute("today",               today);
+        model.addAttribute("expiredOrTodayCount", expiredOrTodayCount);
+        model.addAttribute("withinWeekCount",     withinWeekCount);
+        model.addAttribute("currentUser",         user);
+        return "pages/expiring_medicines";
+    }
 }
+
+
+
