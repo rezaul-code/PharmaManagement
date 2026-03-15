@@ -20,11 +20,15 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
+import com.myspringboot.SpringBootApp.Service.PdfInvoiceService;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-
 import java.util.Optional;
 
 @Controller
@@ -34,7 +38,8 @@ public class BillingController {
     @Autowired private BillingService        billingService;
     @Autowired private MedicineService       medicineService;
     @Autowired private TenantPharmacyService tenantPharmacyService;
-    @Autowired private BillingRepository billingRepository;
+    @Autowired private BillingRepository     billingRepository;
+    @Autowired private PdfInvoiceService     pdfInvoiceService;
 
     // ── Guard ──────────────────────────────────────────────────────────
 
@@ -116,11 +121,19 @@ public class BillingController {
     // ── List all bills ─────────────────────────────────────────────────
 
     @GetMapping("/list")
-    public String listBills(HttpSession session, Model model, RedirectAttributes ra) {
+    public String listBills(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpSession session, Model model, RedirectAttributes ra) {
         User user = requireLoggedIn(session, ra);
         if (user == null) return "redirect:/login";
 
-        model.addAttribute("bills",       billingService.getAllBills());
+        org.springframework.data.domain.Page<Billing> billPage = billingService.getAllBills(page, size);
+
+        model.addAttribute("billPage",    billPage);
+        model.addAttribute("bills",       billPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize",    size);
         model.addAttribute("currentUser", user);
         return "pages/billing_list";
     }
@@ -219,6 +232,31 @@ public class BillingController {
         model.addAttribute("currentUser",    user);
         return "pages/today_sales";
     }
+
+    // ── PDF Invoice Download ───────────────────────────────────────────
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> downloadInvoicePdf(
+            @PathVariable Long id,
+            HttpSession session) {
+
+        User user = (User) session.getAttribute("loggedInUser");
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            byte[] pdf = pdfInvoiceService.generateInvoice(id);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(
+                ContentDisposition.attachment()
+                    .filename("invoice-" + id + ".pdf")
+                    .build());
+            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
+
 
 

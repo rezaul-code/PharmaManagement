@@ -456,6 +456,40 @@
 
       </form>
 
+      <!-- ── LOGO UPLOAD CARD ─────────────────────────────────────── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <div class="settings-card-icon">🖼</div>
+          <div>
+            <div class="settings-card-title">Pharmacy Logo</div>
+            <div class="settings-card-subtitle">Shown on the dashboard and printed on PDF invoices</div>
+          </div>
+        </div>
+        <div class="settings-card-body">
+          <!-- Current logo preview -->
+          <div th:if="${pharmacy.logoPath != null}" style="margin-bottom:16px">
+            <p style="font-size:12px;color:#64748b;margin:0 0 8px">Current logo:</p>
+            <img th:src="'/' + ${pharmacy.logoPath}"
+                 alt="Pharmacy Logo"
+                 style="max-height:80px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:#0f172a;padding:8px"/>
+          </div>
+          <p th:unless="${pharmacy.logoPath != null}"
+             style="font-size:12px;color:#64748b;margin:0 0 12px">No logo uploaded yet.</p>
+
+          <!-- Upload form -->
+          <form th:action="@{/pharmacy/upload-logo}"
+                method="post"
+                enctype="multipart/form-data"
+                style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <input type="file" name="logoFile" accept=".png,.jpg,.jpeg"
+                   style="font-size:13px;color:#94a3b8;flex:1;min-width:200px"/>
+            <button type="submit" class="btn-save" style="padding:8px 20px;font-size:13px">
+              ⬆ Upload
+            </button>
+          </form>
+          <p style="font-size:11px;color:#475569;margin-top:8px">Accepted formats: PNG, JPG · Max size: 5 MB</p>
+        </div>
+      </div>
 
     </div><!-- /settings-wrapper -->
   </div><!-- /page-content -->

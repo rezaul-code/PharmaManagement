@@ -50,6 +50,9 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("classpath:/static/js/");
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/static/images/");
+        // Serve uploaded files (logos etc.) from local filesystem
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/");
     }
     
     @Autowired

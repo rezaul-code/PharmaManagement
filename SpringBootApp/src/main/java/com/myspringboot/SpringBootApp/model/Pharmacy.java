@@ -38,6 +38,10 @@ public class Pharmacy {
     @Column(name = "invoice_footer", length = 500)
     private String invoiceFooter;
 
+    /** Relative path to the uploaded pharmacy logo, e.g. "uploads/logos/1.png" */
+    @Column(name = "logo_path", length = 300)
+    private String logoPath;
+
     public Pharmacy() {}
 
     public Pharmacy(String name) {
@@ -69,6 +73,9 @@ public class Pharmacy {
 
     public String getInvoiceFooter() { return invoiceFooter; }
     public void setInvoiceFooter(String invoiceFooter) { this.invoiceFooter = invoiceFooter; }
+
+    public String getLogoPath() { return logoPath; }
+    public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
 
     // ── Helper: avatar initial for sidebar ──────────────────────────
     public String getAvatarInitial() {

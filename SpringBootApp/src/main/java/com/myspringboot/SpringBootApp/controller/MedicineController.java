@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
+import org.springframework.data.domain.Page;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -46,20 +47,33 @@ public class MedicineController {
             @RequestParam(required = false) String       description,
             @RequestParam(required = false) MedicineType type,
             @RequestParam(required = false) String       medicineCode,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "name") String sortField,
+            @RequestParam(defaultValue = "asc") String sortDir,
             HttpSession session,
             Model model) {
 
         User user = (User) session.getAttribute("loggedInUser");
         if (user == null) return "redirect:/login";
 
-        model.addAttribute("medicines",
-                medicineService.searchMedicines(id, name, description, type, medicineCode));
+        Page<Medicine> medicinePage = medicineService.searchMedicines(id, name, description, type, medicineCode, page, size, sortField, sortDir);
+
+        model.addAttribute("medicinePage", medicinePage);
+        model.addAttribute("medicines", medicinePage.getContent());
         model.addAttribute("types",              MedicineType.values());
         model.addAttribute("searchId",           id);
         model.addAttribute("searchName",         name);
         model.addAttribute("searchDescription",  description);
         model.addAttribute("searchType",         type);
         model.addAttribute("searchMedicineCode", medicineCode);
+        
+        model.addAttribute("currentPage", page);
+        model.addAttribute("pageSize", size);
+        model.addAttribute("sortField", sortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
+        
         model.addAttribute("currentUser",        user);
         model.addAttribute("activePage",         "medicines");
 

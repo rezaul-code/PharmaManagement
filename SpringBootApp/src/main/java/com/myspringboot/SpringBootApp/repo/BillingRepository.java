@@ -23,6 +23,8 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
 
     List<Billing> findByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId);
 
+    org.springframework.data.domain.Page<Billing> findByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId, org.springframework.data.domain.Pageable pageable);
+
     Optional<Billing> findByIdAndPharmacyId(Long id, Long pharmacyId);
 
     List<Billing> findByPharmacyIsNull();
@@ -275,6 +277,8 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
     List<Billing> findByPharmacyIdAndCreatedAtBetweenOrderByCreatedAtDesc(
         Long pharmacyId, LocalDateTime start, LocalDateTime end);
     
+    
+    List<Billing> findTop5ByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId);
     
 }
 

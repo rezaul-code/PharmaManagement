@@ -56,9 +56,13 @@
       <small>All billing records, most recent first</small>
     </div>
     <div class="topbar-actions">
+      <a href="/export/sales?format=csv" class="topbar-btn btn-outline"
+         style="border-color:#10b981;color:#059669;background:#ecfdf5;margin-right:4px">⬇ CSV</a>
+      <a href="/export/sales?format=xlsx" class="topbar-btn btn-outline"
+         style="border-color:#3b82f6;color:#1d4ed8;background:#eff6ff;margin-right:8px">📊 Excel</a>
       <a href="/billing/credit" class="topbar-btn btn-outline"
          th:if="${bills != null}"
-         style="border-color:#fde68a;color:#b45309;background:#fffbeb">
+         style="border-color:#fde68a;color:#b45309;background:#fffbeb;margin-right:8px">
         🤝 Credit Bills
       </a>
       <a href="/billing/new" class="topbar-btn btn-primary">🧾 New Bill</a>
@@ -75,7 +79,10 @@
       <div class="card-header">
         <div class="card-title">📋 All Bills</div>
         <span style="font-size:12px;color:var(--text-muted)"
-              th:text="${bills.size()} + ' record(s)'">0 records</span>
+              th:if="${billPage.totalElements > 0}"
+              th:text="'Showing ' + (${billPage.number * billPage.size + 1}) + '–' + (${billPage.number * billPage.size + billPage.numberOfElements}) + ' of ' + ${billPage.totalElements} + ' bills'">0 records</span>
+        <span style="font-size:12px;color:var(--text-muted)"
+              th:if="${billPage.totalElements == 0}">0 bills</span>
       </div>
 
       <!-- Filter chips -->
@@ -99,6 +106,7 @@
         <table class="pharma-table" id="billTable">
           <thead>
             <tr>
+              <th width="5%">#</th>
               <th>Bill #</th>
               <th>Patient</th>
               <th>Phone</th>
@@ -116,16 +124,20 @@
 
             <!-- Empty state -->
             <tr th:if="${#lists.isEmpty(bills)}" class="no-filter-hide">
-              <td colspan="11" style="text-align:center;padding:40px;color:var(--text-muted)">
+              <td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)">
                 No bills found.
                 <a href="/billing/new" style="color:var(--primary);font-weight:600">Create the first one →</a>
               </td>
             </tr>
 
-            <tr th:each="bill : ${bills}"
+            <tr th:each="bill, i : ${bills}"
                 th:data-status="${bill.status.name()}"
                 th:data-payment="${bill.paymentType.name()}"
                 th:data-search="${(bill.billNumber ?: '') + ' ' + (bill.patientName ?: '') + ' ' + (bill.patientPhone ?: '')}">
+
+              <!-- # -->
+              <td style="color:var(--text-muted);font-size:12px;font-weight:600"
+                  th:text="${(billPage.number * billPage.size) + i.count}">1</td>
 
               <!-- Bill number -->
               <td>
@@ -185,11 +197,23 @@
               </td>
 
               <!-- Actions -->
-              <td>
+              <td style="white-space:nowrap">
                 <a th:href="@{/billing/view/{id}(id=${bill.id})}"
                    class="btn btn-sm btn-outline"
-                   style="border:1.5px solid var(--border);background:transparent;color:var(--text)">
+                   style="border:1.5px solid var(--border);background:transparent;color:var(--text);margin-right:4px">
                   👁 View
+                </a>
+                <a th:href="@{/billing/{id}/pdf(id=${bill.id})}"
+                   class="btn btn-sm btn-outline"
+                   target="_blank"
+                   style="border:1.5px solid #6366f1;background:transparent;color:#6366f1;margin-right:4px">
+                  🖨 PDF
+                </a>
+                <a th:if="${bill.isCreditBill() and bill.balanceDue.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                   th:href="@{/billing/view/{id}(id=${bill.id})}"
+                   class="btn btn-sm"
+                   style="border:1.5px solid #f59e0b;background:#fffbeb;color:#b45309">
+                  💰 Collect
                 </a>
               </td>
 
@@ -197,13 +221,28 @@
           </tbody>
         </table>
       </div>
-
-      <!-- Table footer count -->
-      <div style="padding:10px 20px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border,#e2e8f0)"
-           id="tableFooter">
-        Showing all <span th:text="${bills.size()}">0</span> records
-      </div>
     </div>
+
+    <!-- ── Pagination ─────────────────────────────────────────── -->
+    <div th:if="${billPage.totalPages > 1}" style="display:flex; justify-content:center; gap:8px; margin-top:20px; margin-bottom: 20px;">
+      <a th:if="${billPage.hasPrevious()}"
+         th:href="@{/billing/list(page=${billPage.number - 1}, size=${pageSize})}"
+         class="btn btn-sm btn-outline" style="border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;">Prev</a>
+      
+      <span th:each="i : ${#numbers.sequence(0, billPage.totalPages - 1)}">
+        <a th:if="${i >= billPage.number - 2 and i <= billPage.number + 2}"
+           th:href="@{/billing/list(page=${i}, size=${pageSize})}"
+           class="btn btn-sm"
+           th:classappend="${i == billPage.number} ? 'btn-primary' : 'btn-outline'"
+           th:style="${i == billPage.number} ? 'padding:5px 10px;' : 'border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;'"
+           th:text="${i + 1}">1</a>
+      </span>
+
+      <a th:if="${billPage.hasNext()}"
+         th:href="@{/billing/list(page=${billPage.number + 1}, size=${pageSize})}"
+         class="btn btn-sm btn-outline" style="border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;">Next</a>
+    </div>
+
   </div>
 </div>
 

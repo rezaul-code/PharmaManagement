@@ -12,6 +12,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Repository
 public interface MedicineRepository extends JpaRepository<Medicine, Long> {
 
@@ -45,15 +48,15 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
           AND (:type         IS NULL OR m.type          = :type)
           AND (:medicineCode IS NULL OR LOWER(m.medicineCode)
                                         LIKE LOWER(CONCAT('%', :medicineCode, '%')))
-        ORDER BY m.name ASC
         """)
-    List<Medicine> searchMedicinesWithCode(
+    Page<Medicine> searchMedicinesWithCode(
             @Param("pharmacyId")   Long         pharmacyId,
             @Param("id")           Long         id,
             @Param("name")         String       name,
             @Param("description")  String       description,
             @Param("type")         MedicineType type,
-            @Param("medicineCode") String       medicineCode
+            @Param("medicineCode") String       medicineCode,
+            Pageable pageable
     );
 
     // ── Stock ────────────────────────────────────────────────────────────
@@ -61,6 +64,11 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
     long           countByStockQuantityLessThanEqualAndPharmacyId(int threshold, Long pharmacyId);
     long           countByPharmacyId(Long pharmacyId);
     List<Medicine> findByPharmacyIsNull();
+
+    // ── Stock health count queries (used by dashboard chart — no full scan) ──
+    long countByPharmacyIdAndStockQuantityEquals(Long pharmacyId, int stockQuantity);
+    long countByPharmacyIdAndStockQuantityBetween(Long pharmacyId, int min, int max);
+    long countByPharmacyIdAndStockQuantityGreaterThan(Long pharmacyId, int stockQuantity);
 
     // ── Expiry ───────────────────────────────────────────────────────────
     @Query("""

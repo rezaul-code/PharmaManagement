@@ -32,7 +32,8 @@ public class HelloController {
     // Inject repositories directly for the chart queries
     @Autowired private BillingRepository     billingRepository;
     @Autowired private MedicineRepository    medicineRepository;
-
+    
+    
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @GetMapping("/dashboard")
@@ -55,7 +56,7 @@ public class HelloController {
         // ── (kept for any other use, tables removed from template) ───────
         model.addAttribute("lowStockMeds",  medicineService.getLowStockMedicines());
         model.addAttribute("recentBills",
-                billingService.getAllBills().stream().limit(5).toList());
+                billingRepository.findTop5ByPharmacyIdOrderByCreatedAtDesc(pharmacyId));
 
         // ── Chart data ───────────────────────────────────────────────────
         model.addAttribute("salesChartJson", buildSalesChartJson(pharmacyId));
@@ -125,14 +126,11 @@ public class HelloController {
             long outOfStock = 0, critical = 0, low = 0, healthy = 0;
 
             if (pharmacyId != null) {
-                List<Medicine> all = medicineRepository.findByPharmacyId(pharmacyId);
-                for (Medicine m : all) {
-                    int qty = m.getStockQuantity();
-                    if      (qty == 0)          outOfStock++;
-                    else if (qty <= 3)           critical++;
-                    else if (qty <= 10)          low++;
-                    else                         healthy++;
-                }
+                // Use targeted COUNT queries — no full table scan
+                outOfStock = medicineRepository.countByPharmacyIdAndStockQuantityEquals(pharmacyId, 0);
+                critical   = medicineRepository.countByPharmacyIdAndStockQuantityBetween(pharmacyId, 1, 3);
+                low        = medicineRepository.countByPharmacyIdAndStockQuantityBetween(pharmacyId, 4, 10);
+                healthy    = medicineRepository.countByPharmacyIdAndStockQuantityGreaterThan(pharmacyId, 10);
             }
 
             Map<String, Long> data = new LinkedHashMap<>();
