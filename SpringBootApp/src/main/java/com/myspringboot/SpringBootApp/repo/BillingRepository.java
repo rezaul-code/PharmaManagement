@@ -72,6 +72,14 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
             List<BillingStatus> statuses);
 
     /**
+     * Paginated version — prevents unbounded list loading at scale.
+     */
+    org.springframework.data.domain.Page<Billing> findByPharmacyIdAndStatusInOrderByCreatedAtDesc(
+            Long               pharmacyId,
+            List<BillingStatus> statuses,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Total face-value of all credit issued by a pharmacy.
      */
     @Query("""

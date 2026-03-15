@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
@@ -20,7 +21,12 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 @Entity
-@Table(name = "medicines")
+@Table(
+    name = "medicines",
+    indexes = {
+        @Index(name = "idx_medicine_pharmacy", columnList = "pharmacy_id")
+    }
+)
 public class Medicine {
 
     @Id

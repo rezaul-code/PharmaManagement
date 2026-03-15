@@ -54,14 +54,14 @@ public class AuditLog {
 
     // ── Convenience factory ───────────────────────────────────────────────
 
-    public static AuditLog of(User user, String action, String entityType,
+    public static AuditLog of(User user, Long pharmacyId, String action, String entityType,
                                Long entityId, String details) {
         AuditLog log = new AuditLog();
         if (user != null) {
             log.userId     = user.getId();
             log.username   = user.getEmail();
-            if (user.getPharmacy() != null) log.pharmacyId = user.getPharmacy().getId();
         }
+        log.pharmacyId = pharmacyId;          // resolved by caller — never lazy-loaded here
         log.action     = action;
         log.entityType = entityType;
         log.entityId   = entityId;

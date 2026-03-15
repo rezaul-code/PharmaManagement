@@ -1,11 +1,13 @@
 package com.myspringboot.SpringBootApp.controller;
 
-import com.myspringboot.SpringBootApp.Service.TenantContext;
+import com.myspringboot.SpringBootApp.Service.AuditLogService;
+import com.myspringboot.SpringBootApp.Service.TenantPharmacyService;
 import com.myspringboot.SpringBootApp.model.Pharmacy;
 import com.myspringboot.SpringBootApp.model.User;
 import com.myspringboot.SpringBootApp.repo.PharmacyRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,10 +28,12 @@ import java.nio.file.StandardCopyOption;
 @RequestMapping("/pharmacy")
 public class PharmacyController {
 
-    @Autowired
-    private PharmacyRepository pharmacyRepository;
+    @Autowired private PharmacyRepository pharmacyRepository;
+    @Autowired private TenantPharmacyService tenantPharmacyService;
+    @Autowired private AuditLogService auditLogService;
 
-    private static final String LOGO_DIR = "uploads/logos/";
+    @Value("${app.upload.logo-dir:uploads/logos/}")
+    private String logoDir;
 
     // ── GET /pharmacy/settings ────────────────────────────────────────
     @GetMapping("/settings")
@@ -40,7 +44,7 @@ public class PharmacyController {
             return "redirect:/dashboard";
         }
 
-        Long pharmacyId = TenantContext.getCurrentPharmacyId();
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         Pharmacy pharmacy = pharmacyRepository.findById(pharmacyId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Pharmacy not found for id: " + pharmacyId));
@@ -60,7 +64,7 @@ public class PharmacyController {
             return "redirect:/dashboard";
         }
 
-        Long pharmacyId = TenantContext.getCurrentPharmacyId();
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         Pharmacy pharmacy = pharmacyRepository.findById(pharmacyId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Pharmacy not found for id: " + pharmacyId));
@@ -115,8 +119,8 @@ public class PharmacyController {
 
         try {
             // 3. MIME type validation — write to temp file, probe, then copy to final location
-            Long pharmacyId = TenantContext.getCurrentPharmacyId();
-            Path dir = Paths.get(LOGO_DIR);
+            Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+            Path dir = Paths.get(logoDir);
             Files.createDirectories(dir);
 
             String ext      = lowerName.substring(lowerName.lastIndexOf('.'));
@@ -141,12 +145,17 @@ public class PharmacyController {
 
             Pharmacy pharmacy = pharmacyRepository.findById(pharmacyId)
                     .orElseThrow(() -> new IllegalStateException("Pharmacy not found."));
-            pharmacy.setLogoPath(LOGO_DIR + filename);
+            pharmacy.setLogoPath(logoDir + filename);
             pharmacyRepository.save(pharmacy);
 
             if (loggedInUser.getPharmacy() != null) {
-                loggedInUser.getPharmacy().setLogoPath(LOGO_DIR + filename);
+                loggedInUser.getPharmacy().setLogoPath(logoDir + filename);
             }
+
+            // ── Audit log ──
+            auditLogService.log(loggedInUser, pharmacyId,
+                    "LOGO_UPLOAD", "Pharmacy", pharmacyId,
+                    "Logo uploaded: " + filename);
 
             redirectAttributes.addFlashAttribute("successMessage", "Logo uploaded successfully!");
 

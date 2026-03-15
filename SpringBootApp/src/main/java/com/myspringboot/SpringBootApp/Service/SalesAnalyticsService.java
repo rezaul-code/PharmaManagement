@@ -17,7 +17,7 @@ import java.util.Map;
 @Service
 public class SalesAnalyticsService {
 
-    private static final int TOP_N = 10;
+    private static final int DEFAULT_TOP_N = 10;
 
     @Autowired
     private BillingRepository billingRepository;
@@ -53,6 +53,10 @@ public class SalesAnalyticsService {
      * @param period "7d" | "30d" | "90d" | "1y"
      */
     public List<SalesAnalyticsResult> getTopMedicines(String metric, String period) {
+        return getTopMedicines(metric, period, DEFAULT_TOP_N);
+    }
+
+    public List<SalesAnalyticsResult> getTopMedicines(String metric, String period, int topN) {
         Long          pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         LocalDateTime start      = startOf(period);
         LocalDateTime end        = endOfToday();
@@ -63,7 +67,7 @@ public class SalesAnalyticsService {
             default        -> billingRepository.findTopByQuantity(pharmacyId, start, end);
         };
 
-        return raw.stream().limit(TOP_N).toList();
+        return raw.stream().limit(topN).toList();
     }
 
     // ── Period-wide summary stat cards ───────────────────────────────────────

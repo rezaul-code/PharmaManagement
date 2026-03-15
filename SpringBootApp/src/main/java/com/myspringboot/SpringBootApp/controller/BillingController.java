@@ -131,10 +131,20 @@ public class BillingController {
         User user = requireLoggedIn(session, ra);
         if (user == null) return "redirect:/login";
 
-        // Default to current month if no filter supplied
-        java.time.YearMonth ym = (year != null && month != null)
-                ? java.time.YearMonth.of(year, month)
-                : java.time.YearMonth.now();
+        // Default to current month if no filter supplied, or if inputs are invalid
+        java.time.YearMonth ym;
+        if (year != null && month != null) {
+            // Validate month range before calling YearMonth.of() — prevents DateTimeException HTTP 500
+            int safeMonth = (month >= 1 && month <= 12) ? month : java.time.YearMonth.now().getMonthValue();
+            int safeYear  = (year  >= 1900 && year <= 9999) ? year : java.time.YearMonth.now().getYear();
+            try {
+                ym = java.time.YearMonth.of(safeYear, safeMonth);
+            } catch (java.time.DateTimeException e) {
+                ym = java.time.YearMonth.now();
+            }
+        } else {
+            ym = java.time.YearMonth.now();
+        }
 
         LocalDateTime start = ym.atDay(1).atStartOfDay();
         LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
@@ -171,11 +181,24 @@ public class BillingController {
     // ── Credit bills list ──────────────────────────────────────────────
 
     @GetMapping("/credit")
-    public String creditBills(HttpSession session, Model model, RedirectAttributes ra) {
+    public String creditBills(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size,
+            HttpSession session, Model model, RedirectAttributes ra) {
         User user = requireLoggedIn(session, ra);
         if (user == null) return "redirect:/login";
 
-        model.addAttribute("bills",         billingService.getPendingCreditBills());
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, size,
+                        org.springframework.data.domain.Sort.by("createdAt").descending());
+
+        org.springframework.data.domain.Page<Billing> billPage =
+                billingService.getPendingCreditBills(pageable);
+
+        model.addAttribute("billPage",      billPage);
+        model.addAttribute("bills",         billPage.getContent());
+        model.addAttribute("currentPage",   page);
+        model.addAttribute("pageSize",      size);
         model.addAttribute("creditSummary", billingService.getCreditSummary());
         model.addAttribute("currentUser",   user);
         return "pages/billing_credit";
@@ -230,7 +253,7 @@ public class BillingController {
         User user = requireLoggedIn(session, ra);
         if (user == null) return "redirect:/login";
      
-        Long pharmacyId = user.getPharmacy().getId();
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         LocalDate today      = LocalDate.now();
         LocalDateTime start  = today.atStartOfDay();
         LocalDateTime end    = today.atTime(23, 59, 59);

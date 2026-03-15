@@ -10,6 +10,7 @@ import com.myspringboot.SpringBootApp.repo.CreditPaymentRepository;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import com.myspringboot.SpringBootApp.repo.PharmacyBillCounterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,7 +118,7 @@ public class BillingService {
         billing.applyPaymentType(paymentType, form.getInitialPayment());
 
         Billing saved = billingRepository.save(billing);
-        auditLogService.log(createdBy, "BILL_CREATED", "Billing",
+        auditLogService.log(createdBy, pharmacyId, "BILL_CREATED", "Billing",
                 saved.getId(), "Bill " + saved.getBillNumber() + " for " +
                 (saved.getPatientName() != null ? saved.getPatientName() : "Walk-in"));
         return saved;
@@ -152,7 +153,7 @@ public class BillingService {
 
         billing.recordCreditPayment(cp);
         Billing saved = billingRepository.save(billing);
-        auditLogService.log(recordedBy, "CREDIT_PAYMENT_COLLECTED", "Billing",
+        auditLogService.log(recordedBy, pharmacyId, "CREDIT_PAYMENT_COLLECTED", "Billing",
                 saved.getId(), "₹" + toCollect + " collected. Balance due: ₹" + saved.getBalanceDue());
         return saved;
     }
@@ -189,12 +190,13 @@ public class BillingService {
                         Billing.BillingStatus.CREDIT_CLEARED));
     }
 
-    public List<Billing> getPendingCreditBills() {
+    public org.springframework.data.domain.Page<Billing> getPendingCreditBills(org.springframework.data.domain.Pageable pageable) {
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
         return billingRepository.findByPharmacyIdAndStatusInOrderByCreatedAtDesc(
                 pharmacyId,
                 List.of(Billing.BillingStatus.CREDIT_PENDING,
-                        Billing.BillingStatus.CREDIT_PARTIAL));
+                        Billing.BillingStatus.CREDIT_PARTIAL),
+                pageable);
     }
 
     public CreditSummaryDto getCreditSummary() {
@@ -236,8 +238,17 @@ public class BillingService {
         PharmacyBillCounter counter = billCounterRepository
                 .findByPharmacyIdForUpdate(pharmacyId)
                 .orElseGet(() -> {
-                    PharmacyBillCounter c = new PharmacyBillCounter(pharmacyId);
-                    return billCounterRepository.save(c);
+                    try {
+                        // First-ever bill for this pharmacy — create the counter row
+                        PharmacyBillCounter c = new PharmacyBillCounter(pharmacyId);
+                        return billCounterRepository.save(c);
+                    } catch (DataIntegrityViolationException race) {
+                        // Another concurrent first-bill already inserted the row;
+                        // fetch it and continue — guaranteed to exist now.
+                        return billCounterRepository.findByPharmacyIdForUpdate(pharmacyId)
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "Bill counter row missing after concurrent insert for pharmacyId=" + pharmacyId));
+                    }
                 });
 
         long seq = counter.nextSeq();

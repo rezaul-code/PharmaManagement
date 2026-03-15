@@ -63,7 +63,7 @@
       <div class="card-header">
         <div class="card-title">⏳ Pending Credit Bills</div>
         <span style="font-size:12px;color:var(--text-muted)"
-              th:text="${bills.size()} + ' record(s)'">0</span>
+              th:text="${billPage != null ? billPage.totalElements : bills.size()} + ' record(s)'">0</span>
       </div>
       <div class="table-wrap">
         <table class="pharma-table">
@@ -120,6 +120,20 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination controls -->
+      <div th:if="${billPage != null && billPage.totalPages > 1}"
+           style="display:flex;justify-content:center;align-items:center;gap:12px;padding:16px 0">
+        <a th:if="${currentPage > 0}"
+           th:href="@{/billing/credit(page=${currentPage - 1}, size=${pageSize})}"
+           class="btn btn-sm btn-outline">← Previous</a>
+        <span style="font-size:13px;color:var(--text-muted)"
+              th:text="'Page ' + (${currentPage + 1}) + ' of ' + ${billPage.totalPages}">Page 1 of 1</span>
+        <a th:if="${currentPage + 1 < billPage.totalPages}"
+           th:href="@{/billing/credit(page=${currentPage + 1}, size=${pageSize})}"
+           class="btn btn-sm btn-outline">Next →</a>
+      </div>
+
     </div>
 
   </div>
