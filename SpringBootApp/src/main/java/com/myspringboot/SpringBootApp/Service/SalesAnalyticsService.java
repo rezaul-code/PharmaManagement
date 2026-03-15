@@ -143,14 +143,19 @@ public class SalesAnalyticsService {
      * @param months 6 or 12 (anything else is treated as 6)
      */
     public List<MonthlyTrendResult> getMonthlyTrend(int months) {
-        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
-
-        // Start from the 1st of the month N months ago
         LocalDateTime start = LocalDate.now()
                                        .minusMonths(months)
                                        .withDayOfMonth(1)
                                        .atStartOfDay();
-        LocalDateTime end   = endOfToday();
+        return getMonthlyTrend(start, endOfToday());
+    }
+
+    /**
+     * Overload accepting arbitrary start/end — used by the controller
+     * for 15-day and 1-month quick filters.
+     */
+    public List<MonthlyTrendResult> getMonthlyTrend(LocalDateTime start, LocalDateTime end) {
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
 
         List<Object[]> rows =
                 billingRepository.findMonthlyRevenue(pharmacyId, start, end);
@@ -165,13 +170,45 @@ public class SalesAnalyticsService {
         for (Object[] row : rows) {
             int        yr      = ((Number) row[0]).intValue();
             int        mo      = ((Number) row[1]).intValue();
-            // COALESCE in SQL ensures these are never null, but guard anyway
             BigDecimal revenue = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
             BigDecimal profit  = row[3] != null ? (BigDecimal) row[3] : BigDecimal.ZERO;
             long       units   = row[4] != null ? ((Number) row[4]).longValue() : 0L;
 
             String label = MONTH_NAMES[mo] + " " + yr;  // e.g. "Mar 2025"
             result.add(new MonthlyTrendResult(label, revenue, profit, units));
+        }
+        return result;
+    }
+
+    // ── Daily trend for a specific date range ─────────────────────────────────
+
+    /**
+     * Returns one {@link MonthlyTrendResult} per day within the given range,
+     * ordered oldest → newest. Used when viewing a specific month's daily data.
+     */
+    public List<MonthlyTrendResult> getDailyTrend(LocalDateTime start, LocalDateTime end) {
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+
+        List<Object[]> rows =
+                billingRepository.findDailyTrendBetween(pharmacyId, start, end);
+
+        List<MonthlyTrendResult> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            String     day     = row[0].toString();                              // "2026-03-01"
+            BigDecimal revenue = row[1] != null ? (BigDecimal) row[1] : BigDecimal.ZERO;
+            BigDecimal profit  = row[2] != null ? (BigDecimal) row[2] : BigDecimal.ZERO;
+            long       units   = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+
+            // Format as "1 Mar", "15 Mar" etc.
+            try {
+                LocalDate d = LocalDate.parse(day);
+                String label = d.getDayOfMonth() + " " +
+                    d.getMonth().name().substring(0, 1) +
+                    d.getMonth().name().substring(1, 3).toLowerCase();
+                result.add(new MonthlyTrendResult(label, revenue, profit, units));
+            } catch (Exception ex) {
+                result.add(new MonthlyTrendResult(day, revenue, profit, units));
+            }
         }
         return result;
     }

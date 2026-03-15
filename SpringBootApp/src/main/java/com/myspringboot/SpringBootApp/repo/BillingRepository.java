@@ -237,6 +237,35 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
             @Param("end")        LocalDateTime end);
 
     // ─────────────────────────────────────────────────────────────────────────
+    // DAILY TREND (revenue + profit + units)
+    // Used by Monthly Trends page when viewing a specific month
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns one row per day: [ dateString, revenue, profit, units ]
+     */
+    @Query("""
+        SELECT
+            FUNCTION('DATE', b.createdAt)                                      AS saleDay,
+            SUM(bi.unitPrice * bi.quantity)                                     AS revenue,
+            SUM(bi.quantity * (COALESCE(m.price, bi.unitPrice)
+                               - COALESCE(m.purchasePrice, 0)))                AS profit,
+            SUM(CAST(bi.quantity AS long))                                      AS units
+        FROM   Billing b
+        JOIN   b.items bi
+        LEFT JOIN bi.medicine m
+        WHERE  b.pharmacy.id = :pharmacyId
+          AND  b.createdAt  >= :start
+          AND  b.createdAt  <  :end
+        GROUP  BY FUNCTION('DATE', b.createdAt)
+        ORDER  BY saleDay ASC
+        """)
+    List<Object[]> findDailyTrendBetween(
+            @Param("pharmacyId") Long          pharmacyId,
+            @Param("start")      LocalDateTime start,
+            @Param("end")        LocalDateTime end);
+
+    // ─────────────────────────────────────────────────────────────────────────
     // MONTHLY SALES TREND
     //
     // Groups by YEAR + MONTH of b.createdAt.
