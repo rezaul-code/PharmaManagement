@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -53,65 +54,51 @@ public class SalesAnalyticsController {
         Map<String, BigDecimal> dailyTrend =
                 salesAnalyticsService.getDailyRevenueTrend(period);
 
-        // JSON-safe arrays for bar chart — labels + separate qty/revenue/profit arrays
-        StringBuilder chartLabels   = new StringBuilder("[");
-        StringBuilder chartQty      = new StringBuilder("[");
-        StringBuilder chartRevenue  = new StringBuilder("[");
-        StringBuilder chartProfit   = new StringBuilder("[");
-        for (int i = 0; i < topMedicines.size(); i++) {
-            SalesAnalyticsResult r = topMedicines.get(i);
-            String name = r.getMedicineName()
-                           .replace("\"", "\\\"").replace("'", "\\'");
-            chartLabels .append("\"").append(name).append("\"");
-            chartQty    .append(r.getTotalQuantity());
-            chartRevenue.append(r.getTotalRevenue().toPlainString());
-            chartProfit .append(r.getTotalProfit().toPlainString());
-            if (i < topMedicines.size() - 1) {
-                chartLabels.append(","); chartQty.append(",");
-                chartRevenue.append(","); chartProfit.append(",");
-            }
-        }
-        chartLabels.append("]"); chartQty.append("]");
-        chartRevenue.append("]"); chartProfit.append("]");
+        // ── Chart data as proper List objects ──────────────────────────────
+        // Thymeleaf's /*[[${list}]]*/ serialises List objects as real JS arrays.
+        // Passing a String that *looks* like JSON causes Thymeleaf to quote-wrap
+        // it, turning ["a","b"] into the string '["a","b"]'. Chart.js then
+        // iterates character-by-character → vertical letter stacking.
+        List<String>     chartLabels  = new ArrayList<>();
+        List<Long>       chartQty     = new ArrayList<>();
+        List<BigDecimal> chartRevenue = new ArrayList<>();
+        List<BigDecimal> chartProfit  = new ArrayList<>();
+        List<BigDecimal> chartValues  = new ArrayList<>();
 
-        // Primary chart values based on selected metric
-        StringBuilder chartValues = new StringBuilder("[");
-        for (int i = 0; i < topMedicines.size(); i++) {
-            SalesAnalyticsResult r = topMedicines.get(i);
+        for (SalesAnalyticsResult r : topMedicines) {
+            chartLabels .add(r.getMedicineName());
+            chartQty    .add(r.getTotalQuantity());
+            chartRevenue.add(r.getTotalRevenue());
+            chartProfit .add(r.getTotalProfit());
+
             BigDecimal val = switch (metric) {
                 case "revenue" -> r.getTotalRevenue();
                 case "profit"  -> r.getTotalProfit();
                 default        -> BigDecimal.valueOf(r.getTotalQuantity());
             };
-            chartValues.append(val.toPlainString());
-            if (i < topMedicines.size() - 1) chartValues.append(",");
+            chartValues.add(val);
         }
-        chartValues.append("]");
 
-        // JSON-safe arrays for daily trend line chart
-        StringBuilder trendLabels = new StringBuilder("[");
-        StringBuilder trendValues = new StringBuilder("[");
-        boolean first = true;
+        // ── Daily trend data as proper Lists ──────────────────────────────
+        List<String>     trendLabels = new ArrayList<>();
+        List<BigDecimal> trendValues = new ArrayList<>();
         for (Map.Entry<String, BigDecimal> e : dailyTrend.entrySet()) {
-            if (!first) { trendLabels.append(","); trendValues.append(","); }
-            trendLabels.append("\"").append(e.getKey()).append("\"");
-            trendValues.append(e.getValue().toPlainString());
-            first = false;
+            trendLabels.add(e.getKey());
+            trendValues.add(e.getValue());
         }
-        trendLabels.append("]"); trendValues.append("]");
 
         model.addAttribute("topMedicines",  topMedicines);
         model.addAttribute("summary",       summary);
         model.addAttribute("metric",        metric);
         model.addAttribute("period",        period);
         model.addAttribute("topN",          topN);
-        model.addAttribute("chartLabels",   chartLabels.toString());
-        model.addAttribute("chartValues",   chartValues.toString());
-        model.addAttribute("chartQty",      chartQty.toString());
-        model.addAttribute("chartRevenue",  chartRevenue.toString());
-        model.addAttribute("chartProfit",   chartProfit.toString());
-        model.addAttribute("trendLabels",   trendLabels.toString());
-        model.addAttribute("trendValues",   trendValues.toString());
+        model.addAttribute("chartLabels",   chartLabels);
+        model.addAttribute("chartValues",   chartValues);
+        model.addAttribute("chartQty",      chartQty);
+        model.addAttribute("chartRevenue",  chartRevenue);
+        model.addAttribute("chartProfit",   chartProfit);
+        model.addAttribute("trendLabels",   trendLabels);
+        model.addAttribute("trendValues",   trendValues);
         model.addAttribute("activePage",    "sales-analytics");
 
         return "pages/sales-analytics";
@@ -155,31 +142,24 @@ public class SalesAnalyticsController {
         List<MonthlyTrendResult> monthlyTrend =
                 salesAnalyticsService.getMonthlyTrend(safeMonths);
 
-        StringBuilder mLabels  = new StringBuilder("[");
-        StringBuilder mRevenue = new StringBuilder("[");
-        StringBuilder mProfit  = new StringBuilder("[");
-        StringBuilder mUnits   = new StringBuilder("[");
+        List<String>     mLabels  = new ArrayList<>();
+        List<BigDecimal> mRevenue = new ArrayList<>();
+        List<BigDecimal> mProfit  = new ArrayList<>();
+        List<Long>       mUnits   = new ArrayList<>();
 
-        for (int i = 0; i < monthlyTrend.size(); i++) {
-            MonthlyTrendResult r = monthlyTrend.get(i);
-            mLabels .append("\"").append(r.getMonthLabel()).append("\"");
-            mRevenue.append(r.getRevenue().toPlainString());
-            mProfit .append(r.getProfit() .toPlainString());
-            mUnits  .append(r.getUnits());
-            if (i < monthlyTrend.size() - 1) {
-                mLabels.append(","); mRevenue.append(",");
-                mProfit.append(","); mUnits  .append(",");
-            }
+        for (MonthlyTrendResult r : monthlyTrend) {
+            mLabels .add(r.getMonthLabel());
+            mRevenue.add(r.getRevenue());
+            mProfit .add(r.getProfit());
+            mUnits  .add(r.getUnits());
         }
-        mLabels.append("]"); mRevenue.append("]");
-        mProfit.append("]"); mUnits  .append("]");
 
         model.addAttribute("monthlyTrend",   monthlyTrend);
         model.addAttribute("monthlyPeriod",  safeMonths);
-        model.addAttribute("monthlyLabels",  mLabels .toString());
-        model.addAttribute("monthlyRevenue", mRevenue.toString());
-        model.addAttribute("monthlyProfit",  mProfit .toString());
-        model.addAttribute("monthlyUnits",   mUnits  .toString());
+        model.addAttribute("monthlyLabels",  mLabels);
+        model.addAttribute("monthlyRevenue", mRevenue);
+        model.addAttribute("monthlyProfit",  mProfit);
+        model.addAttribute("monthlyUnits",   mUnits);
         model.addAttribute("activePage",     "monthly-trends");
 
         return "pages/monthly-trends";
