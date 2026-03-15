@@ -26,6 +26,7 @@ public class BillingService {
     @Autowired private CreditPaymentRepository creditPaymentRepository;
     @Autowired private MedicineRepository      medicineRepository;
     @Autowired private TenantPharmacyService   tenantPharmacyService;
+    @Autowired private AuditLogService         auditLogService;
 
     // ── Create bill ────────────────────────────────────────────────────
 
@@ -79,7 +80,15 @@ public class BillingService {
                                         ? itemForm.getBatchNo() : med.getBatchNo());
 
                         int currentStock = med.getStockQuantity() != null ? med.getStockQuantity() : 0;
-                        med.setStockQuantity(Math.max(0, currentStock - itemForm.getQuantity()));
+                        int requestedQty = itemForm.getQuantity();
+
+                        if (currentStock < requestedQty) {
+                            throw new RuntimeException("Insufficient stock available");
+                        }
+                        
+                        int newStock = currentStock - requestedQty;
+                        
+                        med.setStockQuantity(newStock);
                         medicineRepository.save(med);
                     }
                 }
@@ -104,7 +113,11 @@ public class BillingService {
         PaymentType paymentType = form.getPaymentType() != null ? form.getPaymentType() : PaymentType.CASH;
         billing.applyPaymentType(paymentType, form.getInitialPayment());
 
-        return billingRepository.save(billing);
+        Billing saved = billingRepository.save(billing);
+        auditLogService.log(createdBy, "BILL_CREATED", "Billing",
+                saved.getId(), "Bill " + saved.getBillNumber() + " for " +
+                (saved.getPatientName() != null ? saved.getPatientName() : "Walk-in"));
+        return saved;
     }
 
     // ── Record credit payment ──────────────────────────────────────────
@@ -135,14 +148,18 @@ public class BillingService {
         cp.setRecordedBy(recordedBy);
 
         billing.recordCreditPayment(cp);
-        return billingRepository.save(billing);
+        Billing saved = billingRepository.save(billing);
+        auditLogService.log(recordedBy, "CREDIT_PAYMENT_COLLECTED", "Billing",
+                saved.getId(), "₹" + toCollect + " collected. Balance due: ₹" + saved.getBalanceDue());
+        return saved;
     }
 
     // ── Read methods ───────────────────────────────────────────────────
 
-    public List<Billing> getAllBills() {
+    public org.springframework.data.domain.Page<Billing> getAllBills(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
         return billingRepository.findByPharmacyIdOrderByCreatedAtDesc(
-                tenantPharmacyService.getCurrentPharmacyId());
+                tenantPharmacyService.getCurrentPharmacyId(), pageable);
     }
 
     @Transactional(readOnly = true)

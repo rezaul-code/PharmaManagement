@@ -11,6 +11,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 @Service
 public class MedicineService {
 
@@ -19,6 +24,9 @@ public class MedicineService {
 
     @Autowired
     private TenantPharmacyService tenantPharmacyService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     // ── Medicine Code generation ─────────────────────────────────────────
 
@@ -34,6 +42,10 @@ public class MedicineService {
     // ── Save (create + update) ───────────────────────────────────────────
 
     public Medicine saveMedicine(Medicine medicine) {
+        if (medicine.getStockQuantity() != null && medicine.getStockQuantity() < 0) {
+            throw new IllegalStateException("Stock cannot be negative");
+        }
+
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
 
         if (medicine.getId() != null) {
@@ -55,7 +67,16 @@ public class MedicineService {
         }
 
         medicine.setPharmacy(tenantPharmacyService.getCurrentPharmacy());
-        return medicineRepository.save(medicine);
+        Medicine saved = medicineRepository.save(medicine);
+
+        // Audit
+        boolean isUpdate = medicine.getId() != null;
+        auditLogService.log(null,
+                isUpdate ? "MEDICINE_UPDATED" : "MEDICINE_CREATED",
+                "Medicine", saved.getId(),
+                saved.getName() + " (" + saved.getMedicineCode() + ")");
+
+        return saved;
     }
 
     /** Alias for backward compatibility. */
@@ -95,6 +116,8 @@ public class MedicineService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Medicine not found with id: " + id));
         medicineRepository.delete(medicine);
+        auditLogService.log(null, "MEDICINE_DELETED", "Medicine",
+                id, "Deleted: " + medicine.getName());
     }
 
     public void deleteById(Long id) {
@@ -109,17 +132,31 @@ public class MedicineService {
      */
     public List<Medicine> searchMedicines(
             Long id, String name, String description, MedicineType type) {
-        return searchMedicines(id, name, description, type, null);
+    	return searchMedicines(
+    	        id, name, description, type,
+    	        null,
+    	        0, 20,
+    	        "name",
+    	        "asc"
+    	).getContent();
     }
 
     /** Extended search that also accepts an optional medicine-code fragment. */
-    public List<Medicine> searchMedicines(
+    public Page<Medicine> searchMedicines(
             Long id, String name, String description,
-            MedicineType type, String medicineCode) {
+            MedicineType type, String medicineCode, int page, int size, String sortField, String sortDir) {
+        
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        String validName = (name != null && name.isBlank()) ? null : name;
+        String validDesc = (description != null && description.isBlank()) ? null : description;
+        String validCode = (medicineCode != null && medicineCode.isBlank()) ? null : medicineCode;
+
         return medicineRepository.searchMedicinesWithCode(
                 tenantPharmacyService.getCurrentPharmacyId(),
-                id, name, description, type,
-                (medicineCode != null && medicineCode.isBlank()) ? null : medicineCode
+                id, validName, validDesc, type, validCode,
+                pageable
         );
     }
 
