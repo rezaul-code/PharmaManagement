@@ -25,15 +25,49 @@
     .analytics-nav-chip:hover { border-color:var(--primary,#0ea5e9); color:var(--primary,#0ea5e9); }
     .analytics-nav-chip.current { background:var(--primary,#0ea5e9); border-color:var(--primary,#0ea5e9); color:#fff; pointer-events:none; }
 
-    /* Period toggle */
-    .period-row { display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    /* Filter panel */
+    .filter-panel {
+      background:#fff; border:1.5px solid var(--border,#e2e8f0);
+      border-radius:14px; padding:18px 24px; margin-bottom:24px;
+    }
+    .filter-row {
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .filter-row + .filter-row {
+      margin-top:12px; padding-top:12px; border-top:1px solid var(--border,#e2e8f0);
+    }
+    .filter-label {
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:.6px; color:var(--text-muted,#64748b);
+      min-width:70px; flex-shrink:0;
+    }
     .filter-btn {
       padding:7px 18px; border-radius:8px; font-size:13px; font-weight:600;
       border:1.5px solid var(--border,#e2e8f0); background:transparent;
       color:var(--text-muted,#64748b); cursor:pointer; transition:all .15s; text-decoration:none;
+      white-space:nowrap;
     }
     .filter-btn:hover { border-color:var(--primary,#0ea5e9); color:var(--primary,#0ea5e9); background:rgba(14,165,233,.06); }
     .filter-btn.active { background:var(--primary,#0ea5e9); border-color:var(--primary,#0ea5e9); color:#fff; }
+
+    /* Filter select + apply */
+    .filter-select {
+      padding:7px 12px; border-radius:8px; font-size:13px; font-weight:600;
+      border:1.5px solid var(--border,#e2e8f0); background:#fff;
+      color:var(--text,#1e293b); cursor:pointer; outline:none; transition:border-color .15s;
+    }
+    .filter-select:focus { border-color:var(--primary,#0ea5e9); }
+    .filter-apply {
+      padding:7px 20px; border-radius:8px; font-size:13px; font-weight:700;
+      border:none; background:var(--primary,#0ea5e9); color:#fff;
+      cursor:pointer; transition:background .15s;
+    }
+    .filter-apply:hover { background:#0284c7; }
+    .filter-reset {
+      font-size:12px; color:var(--text-muted,#94a3b8); text-decoration:none; font-weight:600;
+      transition:color .15s;
+    }
+    .filter-reset:hover { color:var(--primary,#0ea5e9); }
 
     /* Summary stat grid */
     .analytics-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
@@ -101,11 +135,51 @@
       <a href="/monthly-trends"      class="analytics-nav-chip current">📅 Monthly Trends</a>
     </div>
 
-    <!-- Period toggle -->
-    <div class="period-row">
-      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Show</span>
-      <a th:href="@{/monthly-trends(monthlyPeriod=6)}"  th:classappend="${monthlyPeriod==6}?' active':''"  class="filter-btn">Last 6 Months</a>
-      <a th:href="@{/monthly-trends(monthlyPeriod=12)}" th:classappend="${monthlyPeriod==12}?' active':''" class="filter-btn">Last 12 Months</a>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- FILTER PANEL                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="filter-panel">
+      <!-- Row 1: Quick period filters -->
+      <div class="filter-row">
+        <span class="filter-label">Period</span>
+        <a th:href="@{/monthly-trends(period='15d')}"
+           th:classappend="${activePeriod=='15d'}?' active':''" class="filter-btn">📅 15 Days</a>
+        <a th:href="@{/monthly-trends(period='1m')}"
+           th:classappend="${activePeriod=='1m'}?' active':''" class="filter-btn">📅 1 Month</a>
+        <a th:href="@{/monthly-trends(period='6m')}"
+           th:classappend="${activePeriod=='6m'}?' active':''" class="filter-btn">📅 6 Months</a>
+        <a th:href="@{/monthly-trends(period='12m')}"
+           th:classappend="${activePeriod=='12m'}?' active':''" class="filter-btn">📅 12 Months</a>
+      </div>
+
+      <!-- Row 2: Year + Month selector -->
+      <div class="filter-row">
+        <span class="filter-label">Specific</span>
+        <form th:action="@{/monthly-trends}" method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select name="year" class="filter-select" id="filterYear">
+            <option value="">Year…</option>
+            <option th:each="y : ${yearOptions}" th:value="${y}" th:text="${y}"
+                    th:selected="${selectedYear != null and selectedYear == y}">2026</option>
+          </select>
+          <select name="month" class="filter-select" id="filterMonth">
+            <option value="">Month…</option>
+            <option value="1"  th:selected="${selectedMonth != null and selectedMonth == 1}">January</option>
+            <option value="2"  th:selected="${selectedMonth != null and selectedMonth == 2}">February</option>
+            <option value="3"  th:selected="${selectedMonth != null and selectedMonth == 3}">March</option>
+            <option value="4"  th:selected="${selectedMonth != null and selectedMonth == 4}">April</option>
+            <option value="5"  th:selected="${selectedMonth != null and selectedMonth == 5}">May</option>
+            <option value="6"  th:selected="${selectedMonth != null and selectedMonth == 6}">June</option>
+            <option value="7"  th:selected="${selectedMonth != null and selectedMonth == 7}">July</option>
+            <option value="8"  th:selected="${selectedMonth != null and selectedMonth == 8}">August</option>
+            <option value="9"  th:selected="${selectedMonth != null and selectedMonth == 9}">September</option>
+            <option value="10" th:selected="${selectedMonth != null and selectedMonth == 10}">October</option>
+            <option value="11" th:selected="${selectedMonth != null and selectedMonth == 11}">November</option>
+            <option value="12" th:selected="${selectedMonth != null and selectedMonth == 12}">December</option>
+          </select>
+          <button type="submit" class="filter-apply">Apply</button>
+          <a href="/monthly-trends" class="filter-reset" th:if="${activePeriod == 'custom'}">✕ Reset</a>
+        </form>
+      </div>
     </div>
 
     <!-- ── Aggregate stat cards ───────────────────────────────────── -->
@@ -116,7 +190,7 @@
         <div class="analytics-stat-icon" style="background:#ede9fe">💰</div>
         <div class="analytics-stat-label">Total Revenue</div>
         <div class="analytics-stat-value" id="mStatRevenue">—</div>
-        <div class="analytics-stat-sub">Across <span th:text="${monthlyPeriod}">6</span> months</div>
+        <div class="analytics-stat-sub" th:text="${periodLabel}">Last 6 Months</div>
       </div>
 
       <div class="analytics-stat" id="mStatProfitCard">
@@ -135,9 +209,11 @@
 
       <div class="analytics-stat">
         <div class="analytics-stat-icon" style="background:#fef3c7">📅</div>
-        <div class="analytics-stat-label">Avg Monthly Revenue</div>
+        <div class="analytics-stat-label"
+             th:text="${viewMode == 'daily' ? 'Avg Daily Revenue' : 'Avg Monthly Revenue'}">Avg Monthly Revenue</div>
         <div class="analytics-stat-value" id="mStatAvg">—</div>
-        <div class="analytics-stat-sub">Revenue ÷ months</div>
+        <div class="analytics-stat-sub"
+             th:text="${viewMode == 'daily' ? 'Revenue ÷ days' : 'Revenue ÷ months'}">Revenue ÷ months</div>
       </div>
 
     </div>
@@ -147,33 +223,34 @@
 
     <div th:if="${!#lists.isEmpty(monthlyTrend)}" class="chart-card">
       <div class="chart-card-title">
-        Monthly Revenue vs Profit
+        <span th:text="${viewMode == 'daily' ? 'Daily Revenue vs Profit' : 'Monthly Revenue vs Profit'}">Monthly Revenue vs Profit</span>
         <div class="chart-legend">
           <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#8b5cf6"></div>Revenue</div>
           <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#10b981"></div>Profit</div>
         </div>
         <span style="width:100%;font-size:11px;color:var(--text-muted);font-weight:400;margin-top:2px"
-              th:text="'Last '+${monthlyPeriod}+' months — '+${monthlyTrend.size()}+' data point(s)'"></span>
+              th:text="${periodLabel} + ' — ' + ${monthlyTrend.size()} + ' data point(s)'"></span>
       </div>
       <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
     </div>
 
     <div th:if="${#lists.isEmpty(monthlyTrend)}" class="chart-card empty-state">
       <div class="empty-state-icon">📅</div>
-      <div class="empty-state-title">No monthly data yet</div>
+      <div class="empty-state-title">No data for this period</div>
       <div class="empty-state-sub">
-        Bills will appear here once created.
-        <a href="/billing/new" style="color:var(--primary);font-weight:600">Create a bill →</a>
+        Try a different time period, or
+        <a href="/billing/new" style="color:var(--primary);font-weight:600">create a bill →</a>
       </div>
     </div>
 
-    <!-- ── Monthly breakdown table ────────────────────────────────── -->
-    <p class="section-label" th:if="${!#lists.isEmpty(monthlyTrend)}">📋 Month-by-Month Breakdown</p>
+    <!-- ── Breakdown table ────────────────────────────────────────── -->
+    <p class="section-label" th:if="${!#lists.isEmpty(monthlyTrend)}"
+       th:text="${viewMode == 'daily' ? '📋 Day-by-Day Breakdown' : '📋 Month-by-Month Breakdown'}">📋 Month-by-Month Breakdown</p>
     <div class="month-table-card" th:if="${!#lists.isEmpty(monthlyTrend)}">
       <table>
         <thead>
           <tr>
-            <th>Month</th>
+            <th th:text="${viewMode == 'daily' ? 'Day' : 'Month'}">Month</th>
             <th class="num">Revenue (₹)</th>
             <th class="num">Profit (₹)</th>
             <th class="num">Units Sold</th>
@@ -218,6 +295,7 @@ const MONTHLY_LABELS  = /*[[${monthlyLabels}]]*/  [];
 const MONTHLY_REVENUE = /*[[${monthlyRevenue}]]*/ [];
 const MONTHLY_PROFIT  = /*[[${monthlyProfit}]]*/  [];
 const MONTHLY_UNITS   = /*[[${monthlyUnits}]]*/   [];
+const VIEW_MODE       = /*[[${viewMode}]]*/       'monthly';
 
 Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
 Chart.defaults.font.size   = 12;
@@ -290,6 +368,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const ctx = document.getElementById('monthlyChart');
   if (!ctx) return;
 
+  // Smaller point radius for daily mode (more data points)
+  const isDaily   = VIEW_MODE === 'daily';
+  const ptRadius  = isDaily ? (MONTHLY_LABELS.length <= 15 ? 4 : 2) : (MONTHLY_LABELS.length <= 7 ? 5 : 3);
+
   new Chart(ctx, {
     type: 'line',
     data: {
@@ -298,14 +380,14 @@ window.addEventListener('DOMContentLoaded', () => {
         {
           label: 'Revenue (₹)', data: MONTHLY_REVENUE,
           borderColor:'#8b5cf6', backgroundColor:'rgba(139,92,246,.10)',
-          borderWidth:2.5, pointRadius:MONTHLY_LABELS.length<=7?5:3,
+          borderWidth:2.5, pointRadius:ptRadius,
           pointHoverRadius:7, pointBackgroundColor:'#8b5cf6',
           fill:true, tension:0.35, yAxisID:'y',
         },
         {
           label: 'Profit (₹)', data: MONTHLY_PROFIT,
           borderColor:'#10b981', backgroundColor:'rgba(16,185,129,.08)',
-          borderWidth:2.5, pointRadius:MONTHLY_LABELS.length<=7?5:3,
+          borderWidth:2.5, pointRadius:ptRadius,
           pointHoverRadius:7, pointBackgroundColor:'#10b981',
           fill:true, tension:0.35, yAxisID:'y',
         }
@@ -331,7 +413,15 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       },
       scales: {
-        x: { grid:{display:false}, ticks:{maxRotation:0} },
+        x: {
+          grid:{display:false},
+          ticks:{
+            maxRotation: isDaily ? 45 : 0,
+            autoSkip: true,
+            maxTicksLimit: isDaily ? 16 : undefined,
+            font: { size: 11 }
+          }
+        },
         y: { grid:{color:'rgba(0,0,0,.05)'}, ticks:{callback:v=>'₹'+v.toLocaleString('en-IN')} }
       }
     }

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -123,43 +125,116 @@ public class SalesAnalyticsController {
     }
 
     // ════════════════════════════════════════════════════════════════════════
-    // 3. GET /monthly-trends — Monthly revenue + profit dual-line chart
+    // 3. GET /monthly-trends — Monthly/daily revenue + profit trend
     // ════════════════════════════════════════════════════════════════════════
 
     /**
-     * @param monthlyPeriod 6 | 12  (default: 6)
+     * @param period "15d" | "1m" | "6m" | "12m"        (default: 6m)
+     * @param year   e.g. 2026   — if set with month, overrides period
+     * @param month  1–12        — if set with year, overrides period
      */
     @GetMapping("/monthly-trends")
     public String monthlyTrends(
-            @RequestParam(defaultValue = "6") int monthlyPeriod,
+            @RequestParam(defaultValue = "6m") String period,
+            @RequestParam(required = false)    Integer year,
+            @RequestParam(required = false)    Integer month,
             HttpSession session,
             Model model) {
 
         if (session.getAttribute("loggedInUser") == null) return "redirect:/login";
 
-        int safeMonths = (monthlyPeriod == 12) ? 12 : 6;
+        List<MonthlyTrendResult> trendData;
+        String viewMode;        // "daily" or "monthly"
+        String activePeriod;    // which quick-filter is active
+        String periodLabel;     // human label for KPI card subtitle
+        Integer selectedYear  = null;
+        Integer selectedMonth = null;
 
-        List<MonthlyTrendResult> monthlyTrend =
-                salesAnalyticsService.getMonthlyTrend(safeMonths);
+        LocalDate today = LocalDate.now();
 
+        // ── Specific month mode ─────────────────────────────────────────────
+        if (year != null && month != null) {
+            // Validate — fallback to current month if invalid
+            if (year < 2000 || year > today.getYear() + 1 || month < 1 || month > 12) {
+                year  = today.getYear();
+                month = today.getMonthValue();
+            }
+            selectedYear  = year;
+            selectedMonth = month;
+
+            LocalDate monthStart = LocalDate.of(year, month, 1);
+            LocalDateTime start  = monthStart.atStartOfDay();
+            LocalDateTime end    = monthStart.plusMonths(1).atStartOfDay();
+
+            trendData    = salesAnalyticsService.getDailyTrend(start, end);
+            viewMode     = "daily";
+            activePeriod = "custom";
+
+            // e.g. "March 2026"
+            String monthName = monthStart.getMonth().name();
+            monthName = monthName.charAt(0) + monthName.substring(1).toLowerCase();
+            periodLabel = monthName + " " + year;
+        }
+        // ── Quick-filter period mode ────────────────────────────────────────
+        else {
+            activePeriod = period;
+            switch (period) {
+                case "15d" -> {
+                    LocalDateTime start = today.minusDays(15).atStartOfDay();
+                    LocalDateTime end   = today.plusDays(1).atStartOfDay();
+                    trendData   = salesAnalyticsService.getDailyTrend(start, end);
+                    viewMode    = "daily";
+                    periodLabel = "Last 15 Days";
+                }
+                case "1m" -> {
+                    LocalDateTime start = today.minusMonths(1).atStartOfDay();
+                    LocalDateTime end   = today.plusDays(1).atStartOfDay();
+                    trendData   = salesAnalyticsService.getDailyTrend(start, end);
+                    viewMode    = "daily";
+                    periodLabel = "Last 1 Month";
+                }
+                case "12m" -> {
+                    trendData   = salesAnalyticsService.getMonthlyTrend(12);
+                    viewMode    = "monthly";
+                    periodLabel = "Last 12 Months";
+                }
+                default -> { // "6m" and any unknown value
+                    activePeriod = "6m";
+                    trendData    = salesAnalyticsService.getMonthlyTrend(6);
+                    viewMode     = "monthly";
+                    periodLabel  = "Last 6 Months";
+                }
+            }
+        }
+
+        // ── Chart data as Lists (Thymeleaf serialises correctly) ────────────
         List<String>     mLabels  = new ArrayList<>();
         List<BigDecimal> mRevenue = new ArrayList<>();
         List<BigDecimal> mProfit  = new ArrayList<>();
         List<Long>       mUnits   = new ArrayList<>();
 
-        for (MonthlyTrendResult r : monthlyTrend) {
+        for (MonthlyTrendResult r : trendData) {
             mLabels .add(r.getMonthLabel());
             mRevenue.add(r.getRevenue());
             mProfit .add(r.getProfit());
             mUnits  .add(r.getUnits());
         }
 
-        model.addAttribute("monthlyTrend",   monthlyTrend);
-        model.addAttribute("monthlyPeriod",  safeMonths);
+        // Year list for the dropdown (last 3 years)
+        int currentYear = today.getYear();
+        List<Integer> yearOptions = List.of(currentYear - 2, currentYear - 1, currentYear);
+
+        model.addAttribute("monthlyTrend",   trendData);
         model.addAttribute("monthlyLabels",  mLabels);
         model.addAttribute("monthlyRevenue", mRevenue);
         model.addAttribute("monthlyProfit",  mProfit);
         model.addAttribute("monthlyUnits",   mUnits);
+        model.addAttribute("viewMode",       viewMode);
+        model.addAttribute("activePeriod",   activePeriod);
+        model.addAttribute("periodLabel",    periodLabel);
+        model.addAttribute("selectedYear",   selectedYear);
+        model.addAttribute("selectedMonth",  selectedMonth);
+        model.addAttribute("yearOptions",    yearOptions);
         model.addAttribute("activePage",     "monthly-trends");
 
         return "pages/monthly-trends";
