@@ -65,7 +65,7 @@
       margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
     .chart-wrap { position: relative; }
-    .chart-wrap-bar { min-height: 400px; }
+    .chart-wrap-bar { min-height: 420px; }
     .chart-wrap-line { height: 280px; }
 
     .charts-grid {
@@ -493,6 +493,8 @@ Chart.defaults.color       = '#64748b';
           ticks: {
             autoSkip: false,
             mirror: false,
+            maxRotation: 0,
+            minRotation: 0,
             font: { size: 12, weight: '600' },
             padding: 8,
             // Truncate long medicine names to 20 chars on the axis
