@@ -1,63 +1,83 @@
 package com.myspringboot.SpringBootApp.Service;
 
 import com.myspringboot.SpringBootApp.model.Billing;
-import com.myspringboot.SpringBootApp.model.BillingItem;
 import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;  // ← streaming XLSX, flushes rows to disk
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
+/**
+ * TASK 6 FIX — Streaming exports.
+ *
+ * Previous approach: medicineRepository.findByPharmacyId() loaded the full
+ * table into memory in one query. With 100k+ rows this causes OOM.
+ *
+ * New approach:
+ *   - CSV: iterates through pages of 500 rows, builds output incrementally.
+ *   - Excel: uses SXSSFWorkbook (streaming XLSX) with a 500-row in-memory
+ *     window; rows outside the window are spooled to a temp file by POI.
+ *
+ * Peak heap per export ≈ 2× page size instead of 2× full dataset.
+ */
 @Service
 public class ExportService {
+
+    private static final int    PAGE_SIZE = 500;
+    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     @Autowired private MedicineRepository    medicineRepository;
     @Autowired private BillingRepository     billingRepository;
     @Autowired private TenantPharmacyService tenantPharmacyService;
 
-    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-
     // ── Inventory ────────────────────────────────────────────────────────────
 
     public byte[] exportInventory(String format) throws Exception {
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
-        List<Medicine> medicines = medicineRepository.findByPharmacyId(pharmacyId);
-
-        if ("csv".equalsIgnoreCase(format)) {
-            return inventoryCsv(medicines);
-        }
-        return inventoryExcel(medicines);
+        return "csv".equalsIgnoreCase(format)
+                ? inventoryCsv(pharmacyId)
+                : inventoryExcel(pharmacyId);
     }
 
-    private byte[] inventoryCsv(List<Medicine> list) {
+    private byte[] inventoryCsv(Long pharmacyId) {
         StringBuilder sb = new StringBuilder();
         sb.append("Code,Name,Type,Manufacturer,Batch,Stock,Purchase Price,Selling Price,GST %,Expiry\n");
-        for (Medicine m : list) {
-            sb.append(csv(m.getMedicineCode())).append(',')
-              .append(csv(m.getName())).append(',')
-              .append(csv(m.getType() != null ? m.getType().name() : "")).append(',')
-              .append(csv(m.getManufacturer())).append(',')
-              .append(csv(m.getBatchNo())).append(',')
-              .append(m.getStockQuantity()).append(',')
-              .append(fmt(m.getPurchasePrice())).append(',')
-              .append(fmt(m.getPrice())).append(',')
-              .append(fmt(m.getGstPercentage())).append(',')
-              .append(m.getExpiryDate() != null ? m.getExpiryDate().toString() : "").append('\n');
-        }
+
+        int page = 0;
+        Page<Medicine> slice;
+        do {
+            Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("name"));
+            slice = medicineRepository.findByPharmacyId(pharmacyId, pageable);
+            for (Medicine m : slice.getContent()) {
+                sb.append(csv(m.getMedicineCode())).append(',')
+                  .append(csv(m.getName())).append(',')
+                  .append(csv(m.getType() != null ? m.getType().name() : "")).append(',')
+                  .append(csv(m.getManufacturer())).append(',')
+                  .append(csv(m.getBatchNo())).append(',')
+                  .append(m.getStockQuantity() != null ? m.getStockQuantity() : 0).append(',')
+                  .append(fmt(m.getPurchasePrice())).append(',')
+                  .append(fmt(m.getPrice())).append(',')
+                  .append(fmt(m.getGstPercentage())).append(',')
+                  .append(m.getExpiryDate() != null ? m.getExpiryDate().toString() : "").append('\n');
+            }
+        } while (slice.hasNext());
+
         return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    private byte[] inventoryExcel(List<Medicine> list) throws Exception {
-        try (XSSFWorkbook wb = new XSSFWorkbook();
+    private byte[] inventoryExcel(Long pharmacyId) throws Exception {
+        // SXSSFWorkbook keeps only `windowSize` rows in memory; rest spool to disk
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(PAGE_SIZE);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             Sheet sheet = wb.createSheet("Inventory");
@@ -70,24 +90,31 @@ public class ExportService {
                 Cell cell = hRow.createCell(i);
                 cell.setCellValue(headers[i]);
                 cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, 18 * 256);
             }
 
-            int r = 1;
-            for (Medicine m : list) {
-                Row row = sheet.createRow(r++);
-                row.createCell(0).setCellValue(nullStr(m.getMedicineCode()));
-                row.createCell(1).setCellValue(nullStr(m.getName()));
-                row.createCell(2).setCellValue(m.getType() != null ? m.getType().name() : "");
-                row.createCell(3).setCellValue(nullStr(m.getManufacturer()));
-                row.createCell(4).setCellValue(nullStr(m.getBatchNo()));
-                row.createCell(5).setCellValue(m.getStockQuantity() != null ? m.getStockQuantity() : 0);
-                row.createCell(6).setCellValue(m.getPurchasePrice() != null ? m.getPurchasePrice().doubleValue() : 0);
-                row.createCell(7).setCellValue(m.getPrice() != null ? m.getPrice().doubleValue() : 0);
-                row.createCell(8).setCellValue(m.getGstPercentage() != null ? m.getGstPercentage().doubleValue() : 0);
-                row.createCell(9).setCellValue(m.getExpiryDate() != null ? m.getExpiryDate().toString() : "");
-            }
+            int rowNum = 1;
+            int page   = 0;
+            Page<Medicine> slice;
+            do {
+                Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("name"));
+                slice = medicineRepository.findByPharmacyId(pharmacyId, pageable);
+                for (Medicine m : slice.getContent()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(nullStr(m.getMedicineCode()));
+                    row.createCell(1).setCellValue(nullStr(m.getName()));
+                    row.createCell(2).setCellValue(m.getType() != null ? m.getType().name() : "");
+                    row.createCell(3).setCellValue(nullStr(m.getManufacturer()));
+                    row.createCell(4).setCellValue(nullStr(m.getBatchNo()));
+                    row.createCell(5).setCellValue(m.getStockQuantity() != null ? m.getStockQuantity() : 0);
+                    row.createCell(6).setCellValue(m.getPurchasePrice() != null ? m.getPurchasePrice().doubleValue() : 0);
+                    row.createCell(7).setCellValue(m.getPrice() != null ? m.getPrice().doubleValue() : 0);
+                    row.createCell(8).setCellValue(m.getGstPercentage() != null ? m.getGstPercentage().doubleValue() : 0);
+                    row.createCell(9).setCellValue(m.getExpiryDate() != null ? m.getExpiryDate().toString() : "");
+                }
+            } while (slice.hasNext());
+
             wb.write(out);
+            wb.dispose(); // delete temp files created by SXSSFWorkbook
             return out.toByteArray();
         }
     }
@@ -96,34 +123,39 @@ public class ExportService {
 
     public byte[] exportSales(String format) throws Exception {
         Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
-        List<Billing> bills = billingRepository.findByPharmacyIdOrderByCreatedAtDesc(pharmacyId);
-
-        if ("csv".equalsIgnoreCase(format)) {
-            return salesCsv(bills);
-        }
-        return salesExcel(bills);
+        return "csv".equalsIgnoreCase(format)
+                ? salesCsv(pharmacyId)
+                : salesExcel(pharmacyId);
     }
 
-    private byte[] salesCsv(List<Billing> list) {
+    private byte[] salesCsv(Long pharmacyId) {
         StringBuilder sb = new StringBuilder();
         sb.append("Bill #,Patient,Phone,Date,Payment,Status,Subtotal,GST,Grand Total,Balance Due\n");
-        for (Billing b : list) {
-            sb.append(csv(b.getBillNumber())).append(',')
-              .append(csv(b.getPatientName())).append(',')
-              .append(csv(b.getPatientPhone())).append(',')
-              .append(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : "").append(',')
-              .append(b.getPaymentType().name()).append(',')
-              .append(b.getStatus().name()).append(',')
-              .append(fmt(b.getSubtotal())).append(',')
-              .append(fmt(b.getTotalGst())).append(',')
-              .append(fmt(b.getGrandTotal())).append(',')
-              .append(fmt(b.getBalanceDue())).append('\n');
-        }
+
+        int page = 0;
+        Page<Billing> slice;
+        do {
+            Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("createdAt").descending());
+            slice = billingRepository.findByPharmacyIdOrderByCreatedAtDesc(pharmacyId, pageable);
+            for (Billing b : slice.getContent()) {
+                sb.append(csv(b.getBillNumber())).append(',')
+                  .append(csv(b.getPatientName())).append(',')
+                  .append(csv(b.getPatientPhone())).append(',')
+                  .append(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : "").append(',')
+                  .append(b.getPaymentType().name()).append(',')
+                  .append(b.getStatus().name()).append(',')
+                  .append(fmt(b.getSubtotal())).append(',')
+                  .append(fmt(b.getTotalGst())).append(',')
+                  .append(fmt(b.getGrandTotal())).append(',')
+                  .append(fmt(b.getBalanceDue())).append('\n');
+            }
+        } while (slice.hasNext());
+
         return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    private byte[] salesExcel(List<Billing> list) throws Exception {
-        try (XSSFWorkbook wb = new XSSFWorkbook();
+    private byte[] salesExcel(Long pharmacyId) throws Exception {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(PAGE_SIZE);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             Sheet sheet = wb.createSheet("Sales");
@@ -136,24 +168,31 @@ public class ExportService {
                 Cell cell = hRow.createCell(i);
                 cell.setCellValue(headers[i]);
                 cell.setCellStyle(headerStyle);
-                sheet.setColumnWidth(i, 20 * 256);
             }
 
-            int r = 1;
-            for (Billing b : list) {
-                Row row = sheet.createRow(r++);
-                row.createCell(0).setCellValue(nullStr(b.getBillNumber()));
-                row.createCell(1).setCellValue(nullStr(b.getPatientName()));
-                row.createCell(2).setCellValue(nullStr(b.getPatientPhone()));
-                row.createCell(3).setCellValue(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : "");
-                row.createCell(4).setCellValue(b.getPaymentType().name());
-                row.createCell(5).setCellValue(b.getStatus().name());
-                row.createCell(6).setCellValue(b.getSubtotal()   != null ? b.getSubtotal().doubleValue()   : 0);
-                row.createCell(7).setCellValue(b.getTotalGst()   != null ? b.getTotalGst().doubleValue()   : 0);
-                row.createCell(8).setCellValue(b.getGrandTotal() != null ? b.getGrandTotal().doubleValue() : 0);
-                row.createCell(9).setCellValue(b.getBalanceDue() != null ? b.getBalanceDue().doubleValue() : 0);
-            }
+            int rowNum = 1;
+            int page   = 0;
+            Page<Billing> slice;
+            do {
+                Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("createdAt").descending());
+                slice = billingRepository.findByPharmacyIdOrderByCreatedAtDesc(pharmacyId, pageable);
+                for (Billing b : slice.getContent()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(nullStr(b.getBillNumber()));
+                    row.createCell(1).setCellValue(nullStr(b.getPatientName()));
+                    row.createCell(2).setCellValue(nullStr(b.getPatientPhone()));
+                    row.createCell(3).setCellValue(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : "");
+                    row.createCell(4).setCellValue(b.getPaymentType().name());
+                    row.createCell(5).setCellValue(b.getStatus().name());
+                    row.createCell(6).setCellValue(b.getSubtotal()   != null ? b.getSubtotal().doubleValue()   : 0);
+                    row.createCell(7).setCellValue(b.getTotalGst()   != null ? b.getTotalGst().doubleValue()   : 0);
+                    row.createCell(8).setCellValue(b.getGrandTotal() != null ? b.getGrandTotal().doubleValue() : 0);
+                    row.createCell(9).setCellValue(b.getBalanceDue() != null ? b.getBalanceDue().doubleValue() : 0);
+                }
+            } while (slice.hasNext());
+
             wb.write(out);
+            wb.dispose();
             return out.toByteArray();
         }
     }

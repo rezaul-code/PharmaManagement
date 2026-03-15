@@ -14,6 +14,10 @@ import java.util.List;
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_billings_pharmacy_bill_number",
                           columnNames = {"pharmacy_id", "bill_number"})
+    },
+    indexes = {
+        @Index(name = "idx_billing_pharmacy_created",
+               columnList = "pharmacy_id, created_at")
     }
 )
 public class Billing {
