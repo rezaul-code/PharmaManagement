@@ -25,6 +25,16 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
 
     org.springframework.data.domain.Page<Billing> findByPharmacyIdOrderByCreatedAtDesc(Long pharmacyId, org.springframework.data.domain.Pageable pageable);
 
+    /**
+     * Paginated bills within a date range — used by the month/year filter on bill history.
+     * Benefits from the idx_billing_pharmacy_created composite index.
+     */
+    org.springframework.data.domain.Page<Billing> findByPharmacyIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+            Long pharmacyId,
+            LocalDateTime start,
+            LocalDateTime end,
+            org.springframework.data.domain.Pageable pageable);
+
     Optional<Billing> findByIdAndPharmacyId(Long id, Long pharmacyId);
 
     List<Billing> findByPharmacyIsNull();
@@ -203,14 +213,14 @@ public interface BillingRepository extends JpaRepository<Billing, Long> {
      */
     @Query("""
         SELECT
-            CAST(b.createdAt AS date)          AS saleDay,
-            SUM(bi.unitPrice * bi.quantity)    AS revenue
+            FUNCTION('DATE', b.createdAt)   AS saleDay,
+            SUM(bi.unitPrice * bi.quantity) AS revenue
         FROM   Billing b
         JOIN   b.items bi
         WHERE  b.pharmacy.id = :pharmacyId
           AND  b.createdAt  >= :start
           AND  b.createdAt  <  :end
-        GROUP  BY CAST(b.createdAt AS date)
+        GROUP  BY FUNCTION('DATE', b.createdAt)
         ORDER  BY saleDay ASC
         """)
     List<Object[]> findDailyRevenueBetween(

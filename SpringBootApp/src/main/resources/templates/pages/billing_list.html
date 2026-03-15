@@ -41,6 +41,31 @@
       font-size: 11px; font-weight: 700; padding: 2px 8px;
       border-radius: 6px; background:#fee2e2; color:#b91c1c;
     }
+
+    /* ── Month/Year filter row ──────────────────────────────────────── */
+    .date-filter-bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 12px 20px 10px;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: rgba(14,165,233,.04);
+    }
+    .date-filter-bar label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted,#64748b);
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .date-filter-bar select {
+      padding: 5px 10px; border-radius: 8px; font-size: 13px;
+      border: 1.5px solid var(--border,#e2e8f0);
+      background: var(--card-bg,#1e293b); color: var(--text,#f1f5f9);
+      cursor: pointer;
+    }
+    .date-filter-bar select:focus { outline: none; border-color: var(--primary,#0ea5e9); }
+    .btn-filter {
+      padding: 5px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      background: var(--primary,#0ea5e9); color: #fff; border: none; cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-filter:hover { background: #0284c7; }
   </style>
 </head>
 <body>
@@ -82,8 +107,47 @@
               th:if="${billPage.totalElements > 0}"
               th:text="'Showing ' + (${billPage.number * billPage.size + 1}) + '–' + (${billPage.number * billPage.size + billPage.numberOfElements}) + ' of ' + ${billPage.totalElements} + ' bills'">0 records</span>
         <span style="font-size:12px;color:var(--text-muted)"
-              th:if="${billPage.totalElements == 0}">0 bills</span>
+              th:if="${billPage.totalElements == 0}">0 bills in selected period</span>
       </div>
+
+      <!-- ── Month / Year Filter ──────────────────────────────────── -->
+      <form method="get" th:action="@{/billing/list}" class="date-filter-bar">
+        <label>📅 Period</label>
+
+        <!-- Year dropdown -->
+        <select name="year">
+          <th:block th:each="y : ${years}">
+            <option th:value="${y}"
+                    th:text="${y}"
+                    th:selected="${y == selectedYear}">2025</option>
+          </th:block>
+        </select>
+
+        <!-- Month dropdown -->
+        <select name="month">
+          <option value="1"  th:selected="${selectedMonth == 1}">January</option>
+          <option value="2"  th:selected="${selectedMonth == 2}">February</option>
+          <option value="3"  th:selected="${selectedMonth == 3}">March</option>
+          <option value="4"  th:selected="${selectedMonth == 4}">April</option>
+          <option value="5"  th:selected="${selectedMonth == 5}">May</option>
+          <option value="6"  th:selected="${selectedMonth == 6}">June</option>
+          <option value="7"  th:selected="${selectedMonth == 7}">July</option>
+          <option value="8"  th:selected="${selectedMonth == 8}">August</option>
+          <option value="9"  th:selected="${selectedMonth == 9}">September</option>
+          <option value="10" th:selected="${selectedMonth == 10}">October</option>
+          <option value="11" th:selected="${selectedMonth == 11}">November</option>
+          <option value="12" th:selected="${selectedMonth == 12}">December</option>
+        </select>
+
+        <input type="hidden" name="page" value="0"/>
+        <input type="hidden" name="size" th:value="${pageSize}"/>
+        <button type="submit" class="btn-filter">🔍 Filter</button>
+
+        <!-- Quick-link: go back to current month -->
+        <a th:href="@{/billing/list}" style="font-size:12px;color:var(--text-muted);margin-left:8px;text-decoration:none">
+          ↺ Current Month
+        </a>
+      </form>
 
       <!-- Filter chips -->
       <div class="list-filter-bar">
@@ -226,12 +290,12 @@
     <!-- ── Pagination ─────────────────────────────────────────── -->
     <div th:if="${billPage.totalPages > 1}" style="display:flex; justify-content:center; gap:8px; margin-top:20px; margin-bottom: 20px;">
       <a th:if="${billPage.hasPrevious()}"
-         th:href="@{/billing/list(page=${billPage.number - 1}, size=${pageSize})}"
+         th:href="@{/billing/list(page=${billPage.number - 1}, size=${pageSize}, year=${selectedYear}, month=${selectedMonth})}"
          class="btn btn-sm btn-outline" style="border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;">Prev</a>
-      
+
       <span th:each="i : ${#numbers.sequence(0, billPage.totalPages - 1)}">
         <a th:if="${i >= billPage.number - 2 and i <= billPage.number + 2}"
-           th:href="@{/billing/list(page=${i}, size=${pageSize})}"
+           th:href="@{/billing/list(page=${i}, size=${pageSize}, year=${selectedYear}, month=${selectedMonth})}"
            class="btn btn-sm"
            th:classappend="${i == billPage.number} ? 'btn-primary' : 'btn-outline'"
            th:style="${i == billPage.number} ? 'padding:5px 10px;' : 'border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;'"
@@ -239,7 +303,7 @@
       </span>
 
       <a th:if="${billPage.hasNext()}"
-         th:href="@{/billing/list(page=${billPage.number + 1}, size=${pageSize})}"
+         th:href="@{/billing/list(page=${billPage.number + 1}, size=${pageSize}, year=${selectedYear}, month=${selectedMonth})}"
          class="btn btn-sm btn-outline" style="border:1px solid var(--border); background:white; color:var(--text); padding:5px 10px;">Next</a>
     </div>
 

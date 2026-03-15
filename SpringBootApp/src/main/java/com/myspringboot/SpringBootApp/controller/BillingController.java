@@ -122,18 +122,48 @@ public class BillingController {
 
     @GetMapping("/list")
     public String listBills(
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             HttpSession session, Model model, RedirectAttributes ra) {
+
         User user = requireLoggedIn(session, ra);
         if (user == null) return "redirect:/login";
 
-        org.springframework.data.domain.Page<Billing> billPage = billingService.getAllBills(page, size);
+        // Default to current month if no filter supplied
+        java.time.YearMonth ym = (year != null && month != null)
+                ? java.time.YearMonth.of(year, month)
+                : java.time.YearMonth.now();
+
+        LocalDateTime start = ym.atDay(1).atStartOfDay();
+        LocalDateTime end   = ym.atEndOfMonth().atTime(23, 59, 59);
+
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(
+                        page, size,
+                        org.springframework.data.domain.Sort.by("createdAt").descending());
+
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+        org.springframework.data.domain.Page<Billing> billPage =
+                billingRepository.findByPharmacyIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        pharmacyId, start, end, pageable);
+
+        // Build year list: from 2020 up to current year
+        int currentYear  = java.time.LocalDate.now().getYear();
+        java.util.List<Integer> years  = java.util.stream.IntStream
+                .rangeClosed(2020, currentYear)
+                .boxed()
+                .sorted(java.util.Comparator.reverseOrder())
+                .collect(java.util.stream.Collectors.toList());
 
         model.addAttribute("billPage",    billPage);
         model.addAttribute("bills",       billPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("pageSize",    size);
+        model.addAttribute("selectedYear",  ym.getYear());
+        model.addAttribute("selectedMonth", ym.getMonthValue());
+        model.addAttribute("years",       years);
         model.addAttribute("currentUser", user);
         return "pages/billing_list";
     }

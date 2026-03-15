@@ -8,6 +8,7 @@ import com.myspringboot.SpringBootApp.model.*;
 import com.myspringboot.SpringBootApp.repo.BillingRepository;
 import com.myspringboot.SpringBootApp.repo.CreditPaymentRepository;
 import com.myspringboot.SpringBootApp.repo.MedicineRepository;
+import com.myspringboot.SpringBootApp.repo.PharmacyBillCounterRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,11 +23,12 @@ import java.util.Optional;
 @Service
 public class BillingService {
 
-    @Autowired private BillingRepository       billingRepository;
-    @Autowired private CreditPaymentRepository creditPaymentRepository;
-    @Autowired private MedicineRepository      medicineRepository;
-    @Autowired private TenantPharmacyService   tenantPharmacyService;
-    @Autowired private AuditLogService         auditLogService;
+    @Autowired private BillingRepository            billingRepository;
+    @Autowired private CreditPaymentRepository      creditPaymentRepository;
+    @Autowired private MedicineRepository           medicineRepository;
+    @Autowired private TenantPharmacyService        tenantPharmacyService;
+    @Autowired private AuditLogService              auditLogService;
+    @Autowired private PharmacyBillCounterRepository billCounterRepository;
 
     // ── Create bill ────────────────────────────────────────────────────
 
@@ -69,8 +71,10 @@ public class BillingService {
                 BillingItem item = new BillingItem();
 
                 if (hasId) {
+                    // ── TASK 2: Pessimistic lock prevents concurrent oversell ─────
                     Optional<Medicine> medOpt =
-                            medicineRepository.findByIdAndPharmacyId(itemForm.getMedicineId(), pharmacyId);
+                            medicineRepository.findByIdAndPharmacyIdForUpdate(
+                                    itemForm.getMedicineId(), pharmacyId);
                     if (medOpt.isPresent()) {
                         Medicine med = medOpt.get();
                         item.setMedicine(med);
@@ -83,12 +87,11 @@ public class BillingService {
                         int requestedQty = itemForm.getQuantity();
 
                         if (currentStock < requestedQty) {
-                            throw new RuntimeException("Insufficient stock available");
+                            throw new RuntimeException("Insufficient stock available for: " + med.getName()
+                                    + ". Available: " + currentStock + ", requested: " + requestedQty);
                         }
-                        
-                        int newStock = currentStock - requestedQty;
-                        
-                        med.setStockQuantity(newStock);
+
+                        med.setStockQuantity(currentStock - requestedQty);
                         medicineRepository.save(med);
                     }
                 }
@@ -219,10 +222,28 @@ public class BillingService {
 
     // ── Helpers ────────────────────────────────────────────────────────
 
+    /**
+     * TASK 3: Generates a collision-free bill number using a per-pharmacy
+     * atomic counter row with a PESSIMISTIC_WRITE lock.
+     *
+     * The counter row is created lazily on first use. Under concurrent
+     * transactions, each caller blocks until the previous one commits,
+     * guaranteeing a unique sequence number.
+     */
     private String generateBillNumber(Long pharmacyId) {
-        String date  = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long   count = billingRepository.countByPharmacyId(pharmacyId) + 1;
-        return String.format("BILL-%s-%04d", date, count);
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        PharmacyBillCounter counter = billCounterRepository
+                .findByPharmacyIdForUpdate(pharmacyId)
+                .orElseGet(() -> {
+                    PharmacyBillCounter c = new PharmacyBillCounter(pharmacyId);
+                    return billCounterRepository.save(c);
+                });
+
+        long seq = counter.nextSeq();
+        billCounterRepository.save(counter);
+
+        return String.format("BILL-%s-%04d", date, seq);
     }
 
     private BigDecimal orZero(BigDecimal v) { return v != null ? v : BigDecimal.ZERO; }

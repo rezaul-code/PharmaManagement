@@ -2,7 +2,9 @@ package com.myspringboot.SpringBootApp.repo;
 
 import com.myspringboot.SpringBootApp.model.Medicine;
 import com.myspringboot.SpringBootApp.model.MedicineType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,8 +22,20 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
 
     // ── Tenant lookups ───────────────────────────────────────────────────
     List<Medicine>     findByPharmacyId(Long pharmacyId);
+    Page<Medicine>     findByPharmacyId(Long pharmacyId, Pageable pageable);
     Optional<Medicine> findByIdAndPharmacyId(Long id, Long pharmacyId);
     List<Medicine>     findByNameContainingIgnoreCaseAndPharmacyId(String name, Long pharmacyId);
+
+    /**
+     * Acquires a PESSIMISTIC_WRITE lock on the medicine row.
+     * Must be called inside a @Transactional method.
+     * Use this before deducting stock to prevent race conditions.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Medicine m WHERE m.id = :id AND m.pharmacy.id = :pharmacyId")
+    Optional<Medicine> findByIdAndPharmacyIdForUpdate(
+            @Param("id") Long id,
+            @Param("pharmacyId") Long pharmacyId);
 
     // ── Medicine code ────────────────────────────────────────────────────
     boolean            existsByMedicineCodeAndPharmacyId(String code, Long pharmacyId);

@@ -93,23 +93,51 @@ public class PharmacyController {
             return "redirect:/pharmacy/settings";
         }
 
+        // 1. File size limit: 5 MB
+        if (file.getSize() > 5_242_880L) { // 5 * 1024 * 1024
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "File is too large. Maximum allowed size is 5 MB.");
+            return "redirect:/pharmacy/settings";
+        }
+
         String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || (!originalFilename.endsWith(".png")
-                && !originalFilename.endsWith(".jpg")
-                && !originalFilename.endsWith(".jpeg"))) {
+        if (originalFilename == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Invalid file name.");
+            return "redirect:/pharmacy/settings";
+        }
+
+        // 2. Case-insensitive extension check
+        String lowerName = originalFilename.toLowerCase();
+        if (!lowerName.endsWith(".png") && !lowerName.endsWith(".jpg") && !lowerName.endsWith(".jpeg")) {
             redirectAttributes.addFlashAttribute("errorMessage", "Only PNG and JPG files are allowed.");
             return "redirect:/pharmacy/settings";
         }
 
         try {
+            // 3. MIME type validation — write to temp file, probe, then copy to final location
             Long pharmacyId = TenantContext.getCurrentPharmacyId();
             Path dir = Paths.get(LOGO_DIR);
             Files.createDirectories(dir);
 
-            String ext      = originalFilename.substring(originalFilename.lastIndexOf('.'));
+            String ext      = lowerName.substring(lowerName.lastIndexOf('.'));
             String filename = "pharmacy-" + pharmacyId + ext;
             Path   target   = dir.resolve(filename);
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            // Write bytes to a temp file first so probeContentType works on all OSes
+            Path temp = Files.createTempFile("logo-upload-", ext);
+            try {
+                Files.copy(file.getInputStream(), temp, StandardCopyOption.REPLACE_EXISTING);
+                String mimeType = Files.probeContentType(temp);
+                if (mimeType == null || (!mimeType.equals("image/png") && !mimeType.equals("image/jpeg"))) {
+                    redirectAttributes.addFlashAttribute("errorMessage",
+                            "Invalid file type. Only real PNG and JPG images are accepted.");
+                    return "redirect:/pharmacy/settings";
+                }
+                // MIME validated — move to final destination
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(temp);
+            }
 
             Pharmacy pharmacy = pharmacyRepository.findById(pharmacyId)
                     .orElseThrow(() -> new IllegalStateException("Pharmacy not found."));

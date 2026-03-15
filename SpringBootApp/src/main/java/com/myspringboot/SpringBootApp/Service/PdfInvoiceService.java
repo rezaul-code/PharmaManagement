@@ -40,8 +40,10 @@ public class PdfInvoiceService {
      * Returns the raw bytes of the PDF document.
      */
     public byte[] generateInvoice(Long billId) {
-        Billing billing = billingRepository.findById(billId)
-                .orElseThrow(() -> new IllegalArgumentException("Bill not found: " + billId));
+        Long pharmacyId = tenantPharmacyService.getCurrentPharmacyId();
+        Billing billing = billingRepository.findByIdAndPharmacyId(billId, pharmacyId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Invoice not found or does not belong to the current pharmacy."));
 
         Pharmacy pharmacy = billing.getPharmacy();
 
