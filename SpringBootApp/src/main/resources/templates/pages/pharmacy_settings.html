@@ -220,7 +220,7 @@
       display    : flex; align-items: center; justify-content: center;
       font-size  : 22px;
     }
-    .page-header-title  { font-size: 22px; font-weight: 800; color: #f1f5f9; }
+    .page-header-title  { font-size: 22px; font-weight: 800; color: #000000; }
     .page-header-sub    { font-size: 13px; color: #64748b; margin-top: 2px; }
 
     /* ── Role badge in sidebar ──────────────────────────────────── */
@@ -461,33 +461,49 @@
         <div class="settings-card-header">
           <div class="settings-card-icon">🖼</div>
           <div>
-            <div class="settings-card-title">Pharmacy Logo</div>
+            <div class="settings-card-title">Pharmacy Logo (Optional)</div>
             <div class="settings-card-subtitle">Shown on the dashboard and printed on PDF invoices</div>
           </div>
         </div>
         <div class="settings-card-body">
-          <!-- Current logo preview -->
-          <div th:if="${pharmacy.logoPath != null}" style="margin-bottom:16px">
-            <p style="font-size:12px;color:#64748b;margin:0 0 8px">Current logo:</p>
-            <img th:src="'/' + ${pharmacy.logoPath}"
-                 alt="Pharmacy Logo"
-                 style="max-height:80px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:#0f172a;padding:8px"/>
+
+          <!-- Current logo preview (if exists) -->
+          <div th:if="${pharmacy.logoPath != null}" style="margin-bottom:20px; display:flex; align-items:flex-end; gap:24px; flex-wrap:wrap">
+            <div>
+              <p style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 8px">Current Logo</p>
+              <div style="background:#0f172a; border:1px solid var(--settings-border); border-radius:12px; padding:12px; display:inline-block">
+                <img th:src="'/' + ${pharmacy.logoPath}" alt="Pharmacy Logo" style="max-height:80px; max-width:160px; object-fit:contain; display:block"/>
+              </div>
+            </div>
+
+            <form th:action="@{/pharmacy/remove-logo}" method="post">
+              <button type="submit" class="btn-danger" onclick="return confirm('Are you sure you want to remove the pharmacy logo?');">
+                🗑 Remove Logo
+              </button>
+            </form>
           </div>
-          <p th:unless="${pharmacy.logoPath != null}"
-             style="font-size:12px;color:#64748b;margin:0 0 12px">No logo uploaded yet.</p>
+
+          <!-- Empty state message -->
+          <div th:unless="${pharmacy.logoPath != null}" style="margin-bottom:20px">
+            <p style="font-size:13px; font-weight:600; color:#64748b; margin:0; padding:12px 16px; background:rgba(255,255,255,0.03); border:1px dashed var(--settings-border); border-radius:8px; display:inline-block">
+              ℹ️ No logo uploaded yet. Your pharmacy name will be used instead.
+            </p>
+          </div>
 
           <!-- Upload form -->
+          <p style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.5px; margin:0 0 8px" th:text="${pharmacy.logoPath != null ? 'Replace Logo' : 'Upload Logo'}">Upload Logo</p>
           <form th:action="@{/pharmacy/upload-logo}"
                 method="post"
                 enctype="multipart/form-data"
                 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input type="file" name="logoFile" accept=".png,.jpg,.jpeg"
-                   style="font-size:13px;color:#94a3b8;flex:1;min-width:200px"/>
-            <button type="submit" class="btn-save" style="padding:8px 20px;font-size:13px">
-              ⬆ Upload
+            <input type="file" name="logoFile" accept=".png,.jpg,.jpeg" required
+                   style="font-size:13px; color:#e2e8f0; background:var(--settings-input-bg); border:1px solid var(--settings-input-border); border-radius:8px; padding:8px 12px; flex:1; min-width:200px; max-width:400px"/>
+            <button type="submit" class="btn-save" style="padding:10px 20px; font-size:13px">
+              <span th:text="${pharmacy.logoPath != null ? '🔄 Replace' : '⬆ Upload'}">⬆ Upload</span>
             </button>
           </form>
-          <p style="font-size:11px;color:#475569;margin-top:8px">Accepted formats: PNG, JPG · Max size: 5 MB</p>
+          <p style="font-size:11px; color:#64748b; margin-top:10px">Accepted formats: PNG, JPG, JPEG · Max size: 5 MB</p>
+
         </div>
       </div>
 

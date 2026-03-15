@@ -58,11 +58,46 @@ public class PdfInvoiceService {
             header.setWidths(new float[]{60f, 40f});
             header.setSpacingAfter(16f);
 
-            // Left: pharmacy name + address
+            // Left: pharmacy logo + name + address
             PdfPCell leftCell = new PdfPCell();
             leftCell.setBorder(Rectangle.NO_BORDER);
-            leftCell.addElement(new Paragraph(
-                    pharmacy != null ? pharmacy.getName() : "Pharmacy", FONT_TITLE));
+
+            if (pharmacy != null && pharmacy.getLogoPath() != null) {
+                try {
+                    // Create an internal table for logo and text side-by-side
+                    PdfPTable nameTable = new PdfPTable(2);
+                    nameTable.setWidths(new float[]{20f, 80f});
+                    nameTable.setWidthPercentage(100);
+
+                    // Logo cell
+                    PdfPCell logoCell = new PdfPCell();
+                    logoCell.setBorder(Rectangle.NO_BORDER);
+                    logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+
+                    Image logo = Image.getInstance(pharmacy.getLogoPath());
+                    logo.scaleToFit(50f, 50f);
+                    logo.setAlignment(Element.ALIGN_LEFT);
+                    logoCell.addElement(logo);
+                    nameTable.addCell(logoCell);
+
+                    // Text cell
+                    PdfPCell nameCell = new PdfPCell();
+                    nameCell.setBorder(Rectangle.NO_BORDER);
+                    nameCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                    nameCell.addElement(new Paragraph(pharmacy.getName(), FONT_TITLE));
+                    nameTable.addCell(nameCell);
+
+                    leftCell.addElement(nameTable);
+
+                } catch (Exception e) {
+                    // Fallback to text if logo fails
+                    leftCell.addElement(new Paragraph(pharmacy != null ? pharmacy.getName() : "Pharmacy", FONT_TITLE));
+                }
+            } else {
+                leftCell.addElement(new Paragraph(
+                        pharmacy != null ? pharmacy.getName() : "Pharmacy", FONT_TITLE));
+            }
+
             if (pharmacy != null && pharmacy.getAddress() != null) {
                 leftCell.addElement(new Paragraph(pharmacy.getAddress(), FONT_MUTED));
             }
