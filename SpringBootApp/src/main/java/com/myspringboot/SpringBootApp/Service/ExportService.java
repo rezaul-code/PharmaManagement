@@ -49,30 +49,34 @@ public class ExportService {
                 : inventoryExcel(pharmacyId);
     }
 
-    private byte[] inventoryCsv(Long pharmacyId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Code,Name,Type,Manufacturer,Batch,Stock,Purchase Price,Selling Price,GST %,Expiry\n");
+    private byte[] inventoryCsv(Long pharmacyId) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                out, java.nio.charset.StandardCharsets.UTF_8)) {
 
-        int page = 0;
-        Page<Medicine> slice;
-        do {
-            Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("name"));
-            slice = medicineRepository.findByPharmacyId(pharmacyId, pageable);
-            for (Medicine m : slice.getContent()) {
-                sb.append(csv(m.getMedicineCode())).append(',')
-                  .append(csv(m.getName())).append(',')
-                  .append(csv(m.getType() != null ? m.getType().name() : "")).append(',')
-                  .append(csv(m.getManufacturer())).append(',')
-                  .append(csv(m.getBatchNo())).append(',')
-                  .append(m.getStockQuantity() != null ? m.getStockQuantity() : 0).append(',')
-                  .append(fmt(m.getPurchasePrice())).append(',')
-                  .append(fmt(m.getPrice())).append(',')
-                  .append(fmt(m.getGstPercentage())).append(',')
-                  .append(m.getExpiryDate() != null ? m.getExpiryDate().toString() : "").append('\n');
-            }
-        } while (slice.hasNext());
+            writer.write("Code,Name,Type,Manufacturer,Batch,Stock,Purchase Price,Selling Price,GST %,Expiry\n");
 
-        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            int page = 0;
+            Page<Medicine> slice;
+            do {
+                Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("name"));
+                slice = medicineRepository.findByPharmacyId(pharmacyId, pageable);
+                for (Medicine m : slice.getContent()) {
+                    writer.write(csv(m.getMedicineCode())); writer.write(',');
+                    writer.write(csv(m.getName()));        writer.write(',');
+                    writer.write(csv(m.getType() != null ? m.getType().name() : "")); writer.write(',');
+                    writer.write(csv(m.getManufacturer())); writer.write(',');
+                    writer.write(csv(m.getBatchNo())); writer.write(',');
+                    writer.write(String.valueOf(m.getStockQuantity() != null ? m.getStockQuantity() : 0)); writer.write(',');
+                    writer.write(fmt(m.getPurchasePrice())); writer.write(',');
+                    writer.write(fmt(m.getPrice())); writer.write(',');
+                    writer.write(fmt(m.getGstPercentage())); writer.write(',');
+                    writer.write(m.getExpiryDate() != null ? m.getExpiryDate().toString() : ""); writer.write('\n');
+                }
+                writer.flush(); // release row data to OS after each page
+            } while (slice.hasNext());
+        }
+        return out.toByteArray();
     }
 
     private byte[] inventoryExcel(Long pharmacyId) throws Exception {
@@ -128,30 +132,34 @@ public class ExportService {
                 : salesExcel(pharmacyId);
     }
 
-    private byte[] salesCsv(Long pharmacyId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Bill #,Patient,Phone,Date,Payment,Status,Subtotal,GST,Grand Total,Balance Due\n");
+    private byte[] salesCsv(Long pharmacyId) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                out, java.nio.charset.StandardCharsets.UTF_8)) {
 
-        int page = 0;
-        Page<Billing> slice;
-        do {
-            Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("createdAt").descending());
-            slice = billingRepository.findByPharmacyIdOrderByCreatedAtDesc(pharmacyId, pageable);
-            for (Billing b : slice.getContent()) {
-                sb.append(csv(b.getBillNumber())).append(',')
-                  .append(csv(b.getPatientName())).append(',')
-                  .append(csv(b.getPatientPhone())).append(',')
-                  .append(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : "").append(',')
-                  .append(b.getPaymentType().name()).append(',')
-                  .append(b.getStatus().name()).append(',')
-                  .append(fmt(b.getSubtotal())).append(',')
-                  .append(fmt(b.getTotalGst())).append(',')
-                  .append(fmt(b.getGrandTotal())).append(',')
-                  .append(fmt(b.getBalanceDue())).append('\n');
-            }
-        } while (slice.hasNext());
+            writer.write("Bill #,Patient,Phone,Date,Payment,Status,Subtotal,GST,Grand Total,Balance Due\n");
 
-        return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            int page = 0;
+            Page<Billing> slice;
+            do {
+                Pageable pageable = PageRequest.of(page++, PAGE_SIZE, Sort.by("createdAt").descending());
+                slice = billingRepository.findByPharmacyIdOrderByCreatedAtDesc(pharmacyId, pageable);
+                for (Billing b : slice.getContent()) {
+                    writer.write(csv(b.getBillNumber())); writer.write(',');
+                    writer.write(csv(b.getPatientName())); writer.write(',');
+                    writer.write(csv(b.getPatientPhone())); writer.write(',');
+                    writer.write(b.getCreatedAt() != null ? b.getCreatedAt().format(DT_FMT) : ""); writer.write(',');
+                    writer.write(b.getPaymentType().name()); writer.write(',');
+                    writer.write(b.getStatus().name()); writer.write(',');
+                    writer.write(fmt(b.getSubtotal())); writer.write(',');
+                    writer.write(fmt(b.getTotalGst())); writer.write(',');
+                    writer.write(fmt(b.getGrandTotal())); writer.write(',');
+                    writer.write(fmt(b.getBalanceDue())); writer.write('\n');
+                }
+                writer.flush();
+            } while (slice.hasNext());
+        }
+        return out.toByteArray();
     }
 
     private byte[] salesExcel(Long pharmacyId) throws Exception {

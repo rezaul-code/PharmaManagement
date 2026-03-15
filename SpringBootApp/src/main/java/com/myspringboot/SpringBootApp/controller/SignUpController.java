@@ -6,6 +6,7 @@ import com.myspringboot.SpringBootApp.model.Role;
 import com.myspringboot.SpringBootApp.model.User;
 import com.myspringboot.SpringBootApp.repo.PharmacyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ public class SignUpController {
 
     @Autowired private UserService userService;
     @Autowired private PharmacyRepository pharmacyRepository;
+    @Autowired private BCryptPasswordEncoder passwordEncoder;
 
     @GetMapping("/signup")
     public String showSignup(Model model) {
@@ -65,7 +67,8 @@ public class SignUpController {
         pharmacy.setLicenseNumber(pharmacyLicense);
         Pharmacy savedPharmacy = pharmacyRepository.save(pharmacy);
 
-        // ── Assign OWNER role + ACTIVE status and save ────────────────
+        // ── Hash password and assign OWNER role ───────────────────────
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.OWNER);
         user.setStatus("PENDING");
         user.setPharmacy(savedPharmacy);

@@ -66,6 +66,14 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Update only the password field — used for transparent BCrypt migration
+     * when a user logs in with a legacy plain-text password.
+     */
+    public void updatePassword(User user) {
+        userRepository.save(user);
+    }
+
     // ── Queries ───────────────────────────────────────────────────────
 
     public Optional<User> findById(Long id) {

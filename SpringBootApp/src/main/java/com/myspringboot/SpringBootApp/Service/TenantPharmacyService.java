@@ -20,10 +20,17 @@ public class TenantPharmacyService {
 
     /**
      * Returns the pharmacy ID for the current request's tenant.
-     * Falls back to DEFAULT_PHARMACY_ID if none is set.
+     * Throws if tenant context was never initialized — prevents silent
+     * cross-tenant data leaks.
      */
     public Long getCurrentPharmacyId() {
-        return TenantContext.getCurrentPharmacyId();
+        Long id = TenantContext.getCurrentPharmacyId();
+        if (id == null) {
+            throw new IllegalStateException(
+                    "Tenant context not initialized. "
+                  + "Ensure the user is logged in and TenantInterceptor has run.");
+        }
+        return id;
     }
 
     /**

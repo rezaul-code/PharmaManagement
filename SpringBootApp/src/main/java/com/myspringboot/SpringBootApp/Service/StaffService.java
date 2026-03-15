@@ -4,6 +4,7 @@ import com.myspringboot.SpringBootApp.model.Role;
 import com.myspringboot.SpringBootApp.model.User;
 import com.myspringboot.SpringBootApp.repo.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,7 @@ import java.util.List;
 public class StaffService {
 
     @Autowired private UserRepository userRepository;
+    @Autowired private BCryptPasswordEncoder passwordEncoder;
 
     // ── Create staff directly ─────────────────────────────────────────
 
@@ -30,7 +32,7 @@ public class StaffService {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
-        user.setPassword(password); // hash this if using BCrypt
+        user.setPassword(passwordEncoder.encode(password));  // BCrypt hash
         user.setRole(role);
         user.setPharmacy(owner.getPharmacy());
         user.setStatus("ACTIVE");

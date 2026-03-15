@@ -29,42 +29,64 @@ public class SalesAnalyticsController {
     // ════════════════════════════════════════════════════════════════════════
 
     /**
-     * @param metric "quantity" | "revenue" | "profit"  (default: quantity)
-     * @param period "7d" | "30d" | "90d" | "1y"        (default: 30d)
+     * @param metric \"quantity\" | \"revenue\" | \"profit\"  (default: quantity)
+     * @param period \"7d\" | \"30d\" | \"90d\" | \"1y\"        (default: 30d)
+     * @param topN   5 | 10 | 20                          (default: 5)
      */
     @GetMapping("/sales-analytics")
     public String salesAnalytics(
             @RequestParam(defaultValue = "quantity") String metric,
             @RequestParam(defaultValue = "30d")      String period,
+            @RequestParam(defaultValue = "5")        int topN,
             HttpSession session,
             Model model) {
 
         if (session.getAttribute("loggedInUser") == null) return "redirect:/login";
 
+        // Clamp topN to safe values
+        if (topN != 5 && topN != 10 && topN != 20) topN = 5;
+
         List<SalesAnalyticsResult> topMedicines =
-                salesAnalyticsService.getTopMedicines(metric, period);
+                salesAnalyticsService.getTopMedicines(metric, period, topN);
         Map<String, BigDecimal> summary =
                 salesAnalyticsService.getSummary(period);
         Map<String, BigDecimal> dailyTrend =
                 salesAnalyticsService.getDailyRevenueTrend(period);
 
-        // JSON-safe arrays for bar chart
-        StringBuilder chartLabels = new StringBuilder("[");
-        StringBuilder chartValues = new StringBuilder("[");
+        // JSON-safe arrays for bar chart — labels + separate qty/revenue/profit arrays
+        StringBuilder chartLabels   = new StringBuilder("[");
+        StringBuilder chartQty      = new StringBuilder("[");
+        StringBuilder chartRevenue  = new StringBuilder("[");
+        StringBuilder chartProfit   = new StringBuilder("[");
         for (int i = 0; i < topMedicines.size(); i++) {
             SalesAnalyticsResult r = topMedicines.get(i);
             String name = r.getMedicineName()
                            .replace("\"", "\\\"").replace("'", "\\'");
-            chartLabels.append("\"").append(name).append("\"");
+            chartLabels .append("\"").append(name).append("\"");
+            chartQty    .append(r.getTotalQuantity());
+            chartRevenue.append(r.getTotalRevenue().toPlainString());
+            chartProfit .append(r.getTotalProfit().toPlainString());
+            if (i < topMedicines.size() - 1) {
+                chartLabels.append(","); chartQty.append(",");
+                chartRevenue.append(","); chartProfit.append(",");
+            }
+        }
+        chartLabels.append("]"); chartQty.append("]");
+        chartRevenue.append("]"); chartProfit.append("]");
+
+        // Primary chart values based on selected metric
+        StringBuilder chartValues = new StringBuilder("[");
+        for (int i = 0; i < topMedicines.size(); i++) {
+            SalesAnalyticsResult r = topMedicines.get(i);
             BigDecimal val = switch (metric) {
                 case "revenue" -> r.getTotalRevenue();
                 case "profit"  -> r.getTotalProfit();
                 default        -> BigDecimal.valueOf(r.getTotalQuantity());
             };
             chartValues.append(val.toPlainString());
-            if (i < topMedicines.size() - 1) { chartLabels.append(","); chartValues.append(","); }
+            if (i < topMedicines.size() - 1) chartValues.append(",");
         }
-        chartLabels.append("]"); chartValues.append("]");
+        chartValues.append("]");
 
         // JSON-safe arrays for daily trend line chart
         StringBuilder trendLabels = new StringBuilder("[");
@@ -78,15 +100,19 @@ public class SalesAnalyticsController {
         }
         trendLabels.append("]"); trendValues.append("]");
 
-        model.addAttribute("topMedicines", topMedicines);
-        model.addAttribute("summary",      summary);
-        model.addAttribute("metric",       metric);
-        model.addAttribute("period",       period);
-        model.addAttribute("chartLabels",  chartLabels.toString());
-        model.addAttribute("chartValues",  chartValues.toString());
-        model.addAttribute("trendLabels",  trendLabels.toString());
-        model.addAttribute("trendValues",  trendValues.toString());
-        model.addAttribute("activePage",   "sales-analytics");
+        model.addAttribute("topMedicines",  topMedicines);
+        model.addAttribute("summary",       summary);
+        model.addAttribute("metric",        metric);
+        model.addAttribute("period",        period);
+        model.addAttribute("topN",          topN);
+        model.addAttribute("chartLabels",   chartLabels.toString());
+        model.addAttribute("chartValues",   chartValues.toString());
+        model.addAttribute("chartQty",      chartQty.toString());
+        model.addAttribute("chartRevenue",  chartRevenue.toString());
+        model.addAttribute("chartProfit",   chartProfit.toString());
+        model.addAttribute("trendLabels",   trendLabels.toString());
+        model.addAttribute("trendValues",   trendValues.toString());
+        model.addAttribute("activePage",    "sales-analytics");
 
         return "pages/sales-analytics";
     }

@@ -71,7 +71,7 @@ public class MedicineService {
 
         // Audit
         boolean isUpdate = medicine.getId() != null;
-        auditLogService.log(null,
+        auditLogService.log(null, tenantPharmacyService.getCurrentPharmacyId(),
                 isUpdate ? "MEDICINE_UPDATED" : "MEDICINE_CREATED",
                 "Medicine", saved.getId(),
                 saved.getName() + " (" + saved.getMedicineCode() + ")");
@@ -116,7 +116,8 @@ public class MedicineService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Medicine not found with id: " + id));
         medicineRepository.delete(medicine);
-        auditLogService.log(null, "MEDICINE_DELETED", "Medicine",
+        auditLogService.log(null, tenantPharmacyService.getCurrentPharmacyId(),
+                "MEDICINE_DELETED", "Medicine",
                 id, "Deleted: " + medicine.getName());
     }
 

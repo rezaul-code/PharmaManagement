@@ -8,13 +8,19 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Entity
-@Table(name = "billing_items")
+@Table(
+    name = "billing_items",
+    indexes = {
+        @Index(name = "idx_billing_item_billing", columnList = "billing_id")
+    }
+)
 public class BillingItem {
 
     @Id
