@@ -19,9 +19,11 @@ public class UserService {
     // ── Login ─────────────────────────────────────────────────────────
 
     public User findByIdentifierGlobal(String identifier) {
-        User byEmail = userRepository.findByEmail(identifier);
-        if (byEmail != null) return byEmail;
-        return userRepository.findByPhone(identifier);
+        if (identifier != null && identifier.contains("@")) {
+            return userRepository.findByEmail(identifier).orElse(null);
+        } else {
+            return userRepository.findByPhone(identifier);
+        }
     }
 
     public User findByIdentifier(String identifier) {

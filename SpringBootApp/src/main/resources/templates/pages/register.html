@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Pharmacy | SaaS Platform</title>
+    <!-- Use existing CSS -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .register-card { max-width: 500px; width: 100%; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); padding: 30px; background: white; }
+    </style>
+</head>
+<body>
+
+<div class="register-card">
+    <h3 class="text-center mb-4">Register Your Pharmacy</h3>
+    <form id="registerForm">
+        <div class="mb-3">
+            <label class="form-label">Pharmacy Name</label>
+            <input type="text" id="pharmacyName" class="form-control" placeholder="HealthCare Pharmacy" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Owner Name</label>
+            <input type="text" id="ownerName" class="form-control" placeholder="John Doe" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="admin@pharmacy.com" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Phone Number</label>
+            <input type="text" id="phone" class="form-control" placeholder="1234567890">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" id="password" class="form-control" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Create Account</button>
+        
+        <div id="alertMessage" class="alert mt-3 d-none"></div>
+        <div class="text-center mt-3">
+            <a href="/login" class="text-decoration-none">Already have an account? Login</a>
+        </div>
+    </form>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = {
+            pharmacyName: document.getElementById('pharmacyName').value,
+            ownerName: document.getElementById('ownerName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            password: document.getElementById('password').value
+        };
+
+        const alertDiv = document.getElementById('alertMessage');
+        
+        try {
+            const response = await fetch('/api/auth/register-pharmacy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alertDiv.className = 'alert alert-success mt-3';
+                alertDiv.textContent = 'Pharmacy registered successfully! Redirecting...';
+                alertDiv.classList.remove('d-none');
+                setTimeout(() => window.location.href = '/login?registered=true', 2000);
+            } else {
+                const errText = await response.text();
+                alertDiv.className = 'alert alert-danger mt-3';
+                alertDiv.textContent = 'Registration failed: ' + errText;
+                alertDiv.classList.remove('d-none');
+            }
+        } catch (error) {
+            alertDiv.className = 'alert alert-danger mt-3';
+            alertDiv.textContent = 'An error occurred. Please try again later.';
+            alertDiv.classList.remove('d-none');
+        }
+    });
+</script>
+</body>
+</html>
