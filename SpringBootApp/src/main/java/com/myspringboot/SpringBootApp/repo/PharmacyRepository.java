@@ -11,5 +11,7 @@ public interface PharmacyRepository extends JpaRepository<Pharmacy, Long> {
 
     Optional<Pharmacy> findByName(String name);
 
+    Optional<Pharmacy> findByTenantId(String tenantId);
+
     boolean existsByName(String name);
 }

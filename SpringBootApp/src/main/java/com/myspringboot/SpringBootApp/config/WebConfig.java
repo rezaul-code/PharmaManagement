@@ -10,36 +10,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private AuthInterceptor authInterceptor;
+    // Interceptors removed in favor of Spring Security filters
 
-    @Autowired
-    private TenantInterceptor tenantInterceptor;  // ← NEW
-
-    // ── Interceptor registration ──────────────────────────────────────
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-
-        // 1️⃣  Auth guard — unchanged
-        registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                    "/", "/index",
-                    "/login", "/login/**",
-                    "/signup", "/signup/**",
-                    "/css/**", "/js/**", "/images/**", "/fonts/**",
-                    "/favicon.ico", "/error", "/error/**"
-                )
-                .order(1);
-
-        // 2️⃣  Tenant context loader — runs on EVERY request (including public
-        //     ones) so TenantContext is always initialised and safely cleared.
-        //     It is harmless on unauthenticated requests because it falls back
-        //     to DEFAULT_PHARMACY_ID and gets cleared in afterCompletion().
-        registry.addInterceptor(tenantInterceptor)
-                .addPathPatterns("/**")
-                .order(2);
-    }
 
     // ── Static resource handler ───────────────────────────────────────
     @Override

@@ -19,7 +19,9 @@ public class User {
     @Column(nullable = false)
     private String username;
 
+    @Column(unique = true, nullable = false)
     private String email;
+    
     private String phone;
 
     @Column(nullable = false)
@@ -35,6 +37,12 @@ public class User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharmacy_id")
     private Pharmacy pharmacy;
+
+    @Column(name = "created_at")
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "plan_type")
+    private String planType;
 
     public User() {}
 
@@ -95,6 +103,12 @@ public class User {
     
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getPlanType() { return planType; }
+    public void setPlanType(String planType) { this.planType = planType; }
     
     public String getName() { return this.username;}
 }

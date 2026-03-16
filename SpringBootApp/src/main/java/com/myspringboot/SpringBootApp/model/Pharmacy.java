@@ -6,6 +6,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import java.time.LocalDate;
 
 /**
  * Represents a single pharmacy tenant.
@@ -42,6 +48,26 @@ public class Pharmacy {
     @Column(name = "logo_path", length = 300)
     private String logoPath;
 
+    @Column(name = "tenant_id", unique = true)
+    private String tenantId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private Subscription subscription;
+
+    @Column(name = "subscription_end_date")
+    private LocalDate subscriptionEndDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tenant_status")
+    private TenantStatus status = TenantStatus.ACTIVE;
+
+    @Column(name = "created_at")
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "plan_type")
+    private String planType;
+
     public Pharmacy() {}
 
     public Pharmacy(String name) {
@@ -76,6 +102,24 @@ public class Pharmacy {
 
     public String getLogoPath() { return logoPath; }
     public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
+
+    public String getTenantId() { return tenantId; }
+    public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public Subscription getSubscription() { return subscription; }
+    public void setSubscription(Subscription subscription) { this.subscription = subscription; }
+
+    public LocalDate getSubscriptionEndDate() { return subscriptionEndDate; }
+    public void setSubscriptionEndDate(LocalDate subscriptionEndDate) { this.subscriptionEndDate = subscriptionEndDate; }
+
+    public TenantStatus getStatus() { return status; }
+    public void setStatus(TenantStatus status) { this.status = status; }
+
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public String getPlanType() { return planType; }
+    public void setPlanType(String planType) { this.planType = planType; }
 
     // ── Helper: avatar initial for sidebar ──────────────────────────
     public String getAvatarInitial() {

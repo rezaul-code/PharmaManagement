@@ -27,7 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByPharmacyIdAndRole(Long pharmacyId, Role role);
 
     // ── Global lookups (login) ────────────────────────────────────────
-    User findByEmail(String email);
+    Optional<User> findByEmail(String email);
     User findByPhone(String phone);
 
     // ── Migration helper ──────────────────────────────────────────────
