@@ -22,7 +22,8 @@ jobs:
       - name: Build Project
         run: |
           cd SpringBootApp
-          mvn clean package -DskipTests
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
       - name: Upload JAR to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -32,6 +33,7 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           source: "SpringBootApp/target/*.jar"
           target: "/home/ec2-user/apps/"
+          debug: true
 
       - name: Restart App
         uses: appleboy/ssh-action@v0.1.10
