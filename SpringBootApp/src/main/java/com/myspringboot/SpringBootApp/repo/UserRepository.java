@@ -32,4 +32,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // ── Migration helper ──────────────────────────────────────────────
     List<User> findByPharmacyIsNull();
+    
+    @Query("""
+    		SELECT u
+    		FROM User u
+    		LEFT JOIN FETCH u.pharmacy
+    		WHERE u.email = :email
+    		""")
+    		Optional<User> findByEmailWithPharmacy(@Param("email") String email);
+
+    		@Query("""
+    		SELECT u
+    		FROM User u
+    		LEFT JOIN FETCH u.pharmacy
+    		WHERE u.phone = :phone
+    		""")
+    		User findByPhoneWithPharmacy(@Param("phone") String phone);
+    
 }

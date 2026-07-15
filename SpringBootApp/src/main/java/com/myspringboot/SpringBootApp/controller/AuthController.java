@@ -1,6 +1,7 @@
 package com.myspringboot.SpringBootApp.controller;
 
 import com.myspringboot.SpringBootApp.Service.AuthService;
+import org.springframework.transaction.annotation.Transactional;
 import com.myspringboot.SpringBootApp.Service.TenantRegistrationService;
 import com.myspringboot.SpringBootApp.Service.TenantContext;
 import com.myspringboot.SpringBootApp.dto.AuthResponse;
@@ -64,6 +65,7 @@ public class AuthController {
     }
 
     @GetMapping("/auth/me")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {

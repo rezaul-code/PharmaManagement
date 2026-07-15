@@ -20,9 +20,9 @@ public class UserService {
 
     public User findByIdentifierGlobal(String identifier) {
         if (identifier != null && identifier.contains("@")) {
-            return userRepository.findByEmail(identifier).orElse(null);
+            return userRepository.findByEmailWithPharmacy(identifier).orElse(null);
         } else {
-            return userRepository.findByPhone(identifier);
+            return userRepository.findByPhoneWithPharmacy(identifier);
         }
     }
 
